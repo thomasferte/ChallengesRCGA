@@ -4,10 +4,11 @@
 # les directives Slurm vont ici:
 
 # Your job name (displayed by the queue)
-#SBATCH -J GeneticSingleIs_GA_GAHPDEF_pmutQuant500_pmutCat250_sigmahalv10
+#SBATCH -J GeneticSingleIs_GA_GAHPDEF_pmutQuant500_pmutCat100_sigmahalv100
 
 # walltime (hh:mm::ss)
 #SBATCH -t 06:30:00
+#SBATCH --begin=now+6hours
 
 
 # change working directory

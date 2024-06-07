@@ -11,7 +11,7 @@ def get_GA_parameters_from_scenari(slurm_scenari):
     if "GAHPDEF" in slurm_scenari:
         pmutQuant = extract_value(r"pmutQuant(\d+)", slurm_scenari) / 1000
         pmutCat = extract_value(r"pmutCat(\d+)", slurm_scenari) / 1000
-        sigmahalv = 1/extract_value(r"sigmahalv(\d+)", slurm_scenari)
+        sigmahalv = extract_value(r"sigmahalv(\d+)", slurm_scenari) / 1000
     else:
         pmutQuant = 0.5
         pmutCat = 0.25

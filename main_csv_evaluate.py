@@ -25,6 +25,8 @@ pmutQuant = dict_GA_parameters["pmutQuant"]
 pmutCat = dict_GA_parameters["pmutCat"]
 sigmahalv = dict_GA_parameters["sigmahalv"]
 
+print(glue::glue("------- GA HP : pmutQuant = {pmutQuant}, pmutCat = {pmutCat}, sigmahalv = {sigmahalv} ------------"))
+
 ### Define population size if needed
 if slurm_scenari in ["GeneticSingleIs_GA_1000"]:
     units = 2000
