@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 class CsvGeneticAlgorithm(object):
-    def __init__(self, hp_df, perf_df, Npop = 200, Ne = 100, Ntournament = 2, pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6):
+    def __init__(self, hp_df, perf_df, Npop = 200, Ne = 100, Ntournament = 2, pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 10):
         self._rng = np.random.RandomState()
         self._current_trial = None  # Current state.
         # add genetic algorithm hyperparam
@@ -17,6 +17,7 @@ class CsvGeneticAlgorithm(object):
         self.pmutCat = pmutCat
         self.sigma = sigma
         self.sigma_halv_thresh = sigma_halv_thresh
+        self.sigmahalv = sigmahalv
 
     # Keep top Npop best finished trials
     def keepBestNPopTrials(self):
@@ -106,7 +107,7 @@ class CsvGeneticAlgorithm(object):
           # modifiy sigma if param distribution width is small
           sigma_update = self.sigma
           if(param_width <= self.sigma_halv_thresh):
-              sigma_update = self.sigma/10
+              sigma_update = self.sigma/self.sigmahalv
           
           boolMutationQuant = np.random.rand(1)[0] < self.pmutQuant
           boolMutationCat = np.random.rand(1)[0] < self.pmutCat
