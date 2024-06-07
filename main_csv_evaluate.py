@@ -25,7 +25,7 @@ pmutQuant = dict_GA_parameters["pmutQuant"]
 pmutCat = dict_GA_parameters["pmutCat"]
 sigmahalv = dict_GA_parameters["sigmahalv"]
 
-print(glue::glue("------- GA HP : pmutQuant = {pmutQuant}, pmutCat = {pmutCat}, sigmahalv = {sigmahalv} ------------"))
+print(f"------- GA HP : pmutQuant = {pmutQuant}, pmutCat = {pmutCat}, sigmahalv = {sigmahalv} ------------")
 
 ### Define population size if needed
 if slurm_scenari in ["GeneticSingleIs_GA_1000"]:
@@ -52,7 +52,7 @@ elif slurm_scenari in ["GeneticSingleIs_GA_7", "xgb_pred_RS_7"]:
 else :
     data_path="../high_dimension_reservoir/data_obfuscated/"
 
-data_path="../high_dimension_reservoir/data_obfuscated_short/"
+# data_path="../high_dimension_reservoir/data_obfuscated_short/"
 
 ## frequency update
 if slurm_scenari in ["GeneticSingleIs_GA_20esn_week"]:
@@ -60,10 +60,10 @@ if slurm_scenari in ["GeneticSingleIs_GA_20esn_week"]:
 else :
     update = "month"
 
-# Npop = 2
+# Npop = 2
 # Ne = 1
 # nb_trials_first = 3
-# nb_trials_update = 3
+# nb_trials_update = 3
 
 print("------- first optimisation ------------")
 csv_sampler(
