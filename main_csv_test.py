@@ -28,11 +28,11 @@ scenari_params_folder = output_path + slurm_scenari + "/*.csv"
 csv_files = glob.glob(scenari_params_folder)
 
 if slurm_scenari in ["GeneticSingleIs_GA_21", "xgb_pred_RS_21"]:
-    data_path="data_obfuscated_forecast_21days/"
+    data_path="../high_dimension_reservoir/data_obfuscated_forecast_21days/"
 elif slurm_scenari in ["GeneticSingleIs_GA_7", "xgb_pred_RS_7"]:
-    data_path="data_obfuscated_forecast_7days/"
+    data_path="../high_dimension_reservoir/data_obfuscated_forecast_7days/"
 else :
-    data_path="data_obfuscated/"
+    data_path="../high_dimension_reservoir/data_obfuscated/"
 
 # evaluate algorithm depending on array
 file_i = csv_files[int(array_id)]
