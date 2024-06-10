@@ -17,7 +17,7 @@
 #SBATCH -o /beegfs/tferte/std_out/%j_%a_%x.out # standard out goes to this file
 #SBATCH -e /beegfs/tferte/std_err/%j_%a_%x.err # standard err goes to this file
 
-#SBATCH --array 0-3
+#SBATCH --array 0-15
 #SBATCH --ntasks 1
 #SBATCH --cpus-per-task 1
 #SBATCH --mem-per-cpu=3560
@@ -48,7 +48,7 @@ export MKL_NUM_THREADS=1
 
 module load build/conda/4.10
 conda activate testenv
-cd /home/tferte/high_dimension_reservoir
+cd /home/tferte/ChallengesRCGA
 
 ulimit -c 0
 
