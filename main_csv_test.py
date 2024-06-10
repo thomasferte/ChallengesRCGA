@@ -1,6 +1,7 @@
 from train_test_api.utils import *
 from test_algorithm.TestAlgorithm_for_csv import *
 from genetic_algorithm.parallelise_to_csv import *
+from genetic_algorithm.get_GA_parameters_from_scenari import *
 import os
 import glob
 
