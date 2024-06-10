@@ -37,7 +37,8 @@ else :
 file_i = csv_files[int(array_id)]
 subfolder = file_i.split('/')[-1].split('.')[0]
 # get the date
-forecast_days, features, global_optimizer, nb_esn = features_nbesn_optimizer_from_scenari(slurm_scenari)
+dict_GA_parameters = get_GA_parameters_from_scenari(slurm_scenari = slurm_scenari)
+forecast_days, features, global_optimizer, nb_esn = features_nbesn_optimizer_from_scenari(dict_GA_parameters["scenari"])
 nb_esn = 1
 min_date_eval = get_date_plus_14_from_subfolder(subfolder, forecast_days)
 output_folder = output_path + slurm_scenari + "/test/" + min_date_eval + "/"
