@@ -45,7 +45,7 @@ min_date_eval = get_date_plus_14_from_subfolder(subfolder, forecast_days)
 output_folder = output_path + slurm_scenari + "/test/" + min_date_eval + "/"
 # Test algorithm
 TestAlgorithm_for_csv(
-  scenari = slurm_scenari,
+  scenari = dict_GA_parameters["scenari"],
   output_path = output_folder,
   data_path = data_path,
   study_path = file_i,
