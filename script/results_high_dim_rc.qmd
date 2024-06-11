@@ -17,126 +17,11 @@ source(file = here::here("script/FctCleanFeaturesName.R"))
 set.seed(1)
 ```
 
-# Setting
-
-```{r}
-df_data <- read.csv(here::here("data_obfuscated/20220117.csv"))
-########## NB FEATURES #####
-nb_features <- read.csv(here::here("data_obfuscated/20220117.csv")) %>%
-  select(-outcome, -outcomeDate, -START_DATE) %>%
-  ncol()
-########## Understand gaps #####
-df_data %>%
-  select(P_TOUS_AGES, TESTED_TOUS_AGES, IPTCC.mean, outcome, outcomeDate, hosp) %>%
-  mutate(outcomeDate = as.Date(outcomeDate)) %>%
-  tidyr::pivot_longer(cols = -outcomeDate) %>%
-  ggplot(mapping = aes(x = outcomeDate, y = value)) +
-  geom_line() +
-  facet_grid(name ~ ., scales = "free_y") +
-  scale_x_date(date_breaks = "months") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90),
-        strip.text.y = element_text(angle = 0)) +
-  labs(x = "Date")
-```
-
-The total number of features is `r nb_features`.
-
-# PCA
-
-```{r}
-ncp = 20
-pca <- df_data %>%
-  select(-outcome, -outcomeDate, -START_DATE) %>%
-  FactoMineR::PCA(graph = FALSE, ncp = ncp)
-```
-
-```{r}
-pca$eig %>%
-  as.data.frame() %>%
-  tibble::rowid_to_column(var = "Nb_component") %>%
-  ggplot(mapping = aes(y = Nb_component, x = `cumulative percentage of variance`)) +
-  geom_line() +
-  theme_minimal() +
-  labs(x = "Cumulative percentage of variance",
-       y = "Nb of components")
-```
-
-```{r fig.height=10}
-
-plotPCA <- pca$var$cos2 %>%
-  as.data.frame() %>%
-  tibble::rownames_to_column("features") %>%
-  tidyr::pivot_longer(cols = - features) %>%
-  group_by(name) %>%
-  slice_max(value, n = 3) %>%
-  mutate(features_clean = FctCleanFeaturesName(features),
-         features_clean = forcats::fct_reorder(features_clean, value),
-         name = factor(name,
-                       levels = paste0("Dim.", 1:ncp),
-                       labels = c("PC1: \"SAMU\"",
-                                  "PC2: \"Emergency all site\"",
-                                  "PC3: \"PCR+\"",
-                                  "PC4: \"PCR+\"",
-                                  "PC5: \"SAMU\"",
-                                  "PC6: \"Weather\"",
-                                  "PC7: \"Diarrhea\"",
-                                  "PC8: \"PCR\"",
-                                  "PC9: \"Ageusia, anosmia\"",
-                                  "PC10: \"Emergency site 2\"",
-                                  "PC11: \"Pediatric\"",
-                                  "PC12: \"PCR+ elderly\"",
-                                  "PC13: \"Dyspnea\"",
-                                  "PC14: \"Fever + Dew point\"",
-                                  "PC15: \"Pediatric headache\"",
-                                  "PC16: \"Pediatric dyspnea\"",
-                                  "PC17: \"Fever + wind speed\"",
-                                  "PC18: \"Site 2 + SAMU\"",
-                                  "PC19: ?",
-                                  "PC20: ?"))) %>%
-  ggplot(mapping = aes(y = features_clean, x = value, color = name)) +
-  geom_point() +
-  scale_color_viridis_d() +
-  facet_wrap(name ~ ., scales = "free_y", ncol = 2) +
-  theme_minimal() +
-  theme(legend.position = "none",
-        strip.text = element_text(size = 9)) +
-  labs(x = "Squared cosine",
-       y = "")
-
-plotPCA
-
-ggsave(here::here("results/final_figures/plotPCA.pdf"),
-       plot = plotPCA,
-       width = 11,
-       height = 8)
-```
-
-```{r fig.height=10}
-pca$ind$coord %>%
-  as.data.frame() %>%
-  mutate(outcomeDate = as.Date(df_data$outcomeDate),
-         outcome = df_data$outcome,
-         .before = 1) %>%
-  tidyr::pivot_longer(cols = -c(outcomeDate)) %>%
-  mutate(name = factor(name, levels = c("outcome", paste0("Dim.", 1:ncp)))) %>%
-  ggplot(mapping = aes(y = value, x = outcomeDate, color = name)) +
-  geom_line() +
-  scale_color_manual(values = c("black", viridis::viridis(n = ncp))) +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  facet_wrap(name ~ ., scales = "free_y") +
-  labs(x = "Date",
-       y = "Value",
-       color = "",
-       linewidth = "")
-```
-
 # Forecast
 
 ```{r}
 ### 1) Load data
-path_predictions <- here::here("results/final_prediction/predictions/")
+path_predictions <- here::here("results/experience_1/prediction")
 ls_files <- list.files(path_predictions)
 ls_files_full <- list.files(path_predictions, full.names = TRUE)
 names(ls_files_full) <- gsub(ls_files, pattern = "_combined.csv", replacement = "")
@@ -144,98 +29,52 @@ names(ls_files_full) <- gsub(ls_files, pattern = "_combined.csv", replacement = 
 df_all_temp <- lapply(ls_files_full, read.csv) %>%
   bind_rows(.id = "model") %>%
   mutate(outcomeDate = as.Date(outcomeDate),
-         model = factor(model,
-                        levels = c("2000_units",
-                                   "2000units_20reservoir",
-                                   "GeneticSingleIs_GA",
-                                   "GeneticSingleIs_GA_noGironde",
-                                   "GeneticSingleIs_GA_noWeather",
-                                   "GeneticSingleIs_GA_noUrgSamu",
-                                   "GeneticSingleIs_GA_noDeriv",
-                                   "GeneticSingleIs_GA_10esn",
-                                   "GeneticSingleIs_GA_20esn",
-                                   "GeneticSingleIs_GA_20esn_week",
-                                   "GeneticSingleIs_GA_7",
-                                   "GeneticSingleIs_GA_21",
-                                   "GeneticSingleIs_GA_1000anteriorite",
-                                   "GeneticSingleIs_GA_PCA",
-                                   "GeneticSingleIs_RS",
-                                   "SingleIs_GA",
-                                   "enet_pred_RS",
-                                   "xgb_pred_RS",
-                                   "xgb_pred_RS_21",
-                                   "xgb_pred_RS_7",
-                                   "LSTM_PCA",
-                                   "LSTM_RC",
-                                   "LSTM_20_PCA",
-                                   "transformers_PCA",
-                                   "transformers_RC",
-                                   "prophet",
-                                   "informer",
-                                   "patchtst"),
-                        labels = c("Reservoir FS (GA - 2000)",
-                                   "Reservoir FS (GA - 2000 - 20 RC)",
-                                   "Reservoir FS (GA)",
-                                   "Reservoir FS (GA - no Gironde)",
-                                   "Reservoir FS (GA - no Weather)",
-                                   "Reservoir FS (GA - no Emergency)",
-                                   "Reservoir FS (GA - no Deriv)",
-                                   "Reservoir FS (GA - 10 esn)",
-                                   "Reservoir FS (GA - 20 esn)",
-                                   "Reservoir FS (GA - 20 esn - week update)",
-                                   "Reservoir FS 7 days (GA)",
-                                   "Reservoir FS 21 days (GA)",
-                                   "Reservoir FS (GA) all anteriority",
-                                   "Reservoir FS (GA - PCA)",
-                                   "Reservoir FS (RS)",
-                                   "Reservoir no FS (GA)",
-                                   "Elastic-net (RS)",
-                                   "XGB (RS)",
-                                   "XGB 21 days (RS)",
-                                   "XGB 7 days (RS)",
-                                   "LSTM-PCA",
-                                   "LSTM-RC-GA",
-                                   "LSTM-PCA-20",
-                                   "Transformers-PCA",
-                                   "Transformers-RC-GA",
-                                   "prophet",
-                                   "informer",
-                                   "patchtst"))) %>%
+         model = factor(model)) %>%
   group_by(outcomeDate, model) %>%
   filter(outcomeDate >= as.Date("2021-03-15"))
 
 df_all <- df_all_temp %>% slice_min(hp_date) %>% mutate(update = "No") %>%
   bind_rows(df_all_temp %>% slice_max(hp_date) %>% mutate(update = "Yes")) %>%
-  ungroup() %>%
-  filter(!(model %in% c("Reservoir FS (GA) all anteriority",
-                        "Reservoir FS (GA - 2000)",
-                        "Reservoir FS (GA - 2000 - 20 RC)",
-                        "Reservoir FS (GA - no Gironde)",
-                        "Reservoir FS (GA - no Weather)",
-                        "Reservoir FS (GA - no Emergency)",
-                        "Reservoir FS (GA - no Deriv)",
-                        "LSTM-PCA",
-                        "LSTM-RC-GA",
-                        "LSTM-PCA-20",
-                        "Transformers-PCA",
-                        "Transformers-RC-GA",
-                        "XGB 21 days (RS)",
-                        "XGB 7 days (RS)",
-                        "Reservoir FS 7 days (GA)",
-                        "Reservoir FS 21 days (GA)",
-                        "prophet",
-                        "informer",
-                        "patchtst") & update == "Yes"))
+  ungroup() |> 
+  tidyr::separate_wider_regex(
+    model,
+    patterns = c("GeneticSingleIs_GA_GAHPDEF_pmutQuant", 
+                 pmutQuant = "[0-9]+", 
+                 "_pmutCat", 
+                 pmutCat = "[0-9]+",
+                 "_sigmahalv",
+                 lr_sigma = "[0-9]+")) |> 
+  mutate(across(.cols = c(pmutQuant, pmutCat, lr_sigma),
+                .fns = ~ as.numeric(.x)/1000),
+         short_name_model = paste0("PmutQuant = ", pmutQuant, " ; PmutCat = ", pmutCat, " ; lr sigma = ", lr_sigma),
+         update = factor(update, levels = c("No", "Yes"), labels = c("No monthly update", "Monthly update")))
 ```
 
 ## Performance
+
+### Sanity check
+
+```{r sanitycheck, fig.height=6, fig.cap="Number of reservoir per day for prediction"}
+df_all |> 
+  group_by(update, short_name_model, outcomeDate) |> 
+  summarise(n = n(), .groups = "drop") |> 
+  ggplot(mapping = aes(x = outcomeDate, y = n, color = update)) +
+  geom_line(linewidth = 1) +
+  facet_grid(short_name_model ~ update) +
+  theme_minimal() +
+  theme(strip.text.y = element_text(angle = 0),
+        legend.position = "none") +
+  labs(x = "Date", y = "Nb of reservoir")
+```
+
+### Performance
 
 ```{r}
 df_perf <- df_all %>%
   mutate(outcome = if_else(outcome < 10, 10, outcome),
          pred = if_else(pred < 10, 10, pred),
          hosp = if_else(hosp < 10, 10, hosp)) %>%
-  group_by(outcomeDate, model, update) %>%
+  group_by(outcomeDate, short_name_model, pmutQuant, pmutCat, lr_sigma, update) %>%
   summarise(outcome = unique(outcome),
             hosp = unique(hosp),
             pred = median(pred),
@@ -245,7 +84,7 @@ df_perf <- df_all %>%
          baseline_AE = abs(hosp - outcome),
          AE_baseline = AE - baseline_AE,
          RE_baseline = AE/baseline_AE) %>%
-  group_by(model, update) %>%
+  group_by(short_name_model, pmutQuant, pmutCat, lr_sigma, update) %>%
   summarise(sd_AE = sd(AE, na.rm = T),
             AE = mean(AE, na.rm = T),
             sd_AE_baseline = sd(AE_baseline, na.rm = T),
@@ -255,7 +94,7 @@ df_perf <- df_all %>%
             sd_RE_baseline = sd(RE_baseline, na.rm = TRUE),
             RE_baseline = median(RE_baseline, na.rm = TRUE),
             .groups = "drop") %>%
-  select(model, update, AE, sd_AE, AE_baseline, sd_AE_baseline, RE, sd_RE, RE_baseline, sd_RE_baseline)
+  select(short_name_model, pmutQuant, pmutCat, lr_sigma, update, AE, sd_AE, AE_baseline, sd_AE_baseline, RE, sd_RE, RE_baseline, sd_RE_baseline)
 
 df_perf %>%
   # knitr::kable(format = "latex",
@@ -263,1159 +102,242 @@ df_perf %>%
   knitr::kable(digits = 2,
                caption = "Model performance") %>%
   kableExtra::kable_styling()
-
-# df_all %>%
-#   filter(!is.na(outcome)) |>
-#   group_by(model) %>%
-#   summarise(min = min(outcomeDate),
-#             max = max(outcomeDate),
-#             len = length(unique(outcomeDate)),
-#             len2 = length(outcomeDate))
-
 ```
 
-## RC aggregation
+```{r tileperf}
+df_perf |> 
+  ggplot(mapping = aes(x = lr_sigma, y = pmutCat, fill = AE, label = round(AE, 2))) +
+  geom_tile() +
+  geom_text(color = "white") +
+  facet_wrap(update ~ ., ncol = 1) +
+  theme_minimal() +
+  scale_x_log10(breaks = df_perf$lr_sigma |> unique()) +
+  scale_y_log10(breaks = df_perf$pmutCat |> unique()) +
+  scale_fill_gradient(low = "orange", high = "black") +
+  labs(fill = "Mean absolute error",
+       x = "Leaking rate sigma",
+       y = "Categorical mutation probability")
+```
 
-```{r}
-#| label: rc-aggreg
-#| fig-cap: "Aggregation of reservoir"
-
-nboot <- 500
-vec_nb_esn <- c(1:10, 20, 40)
-
-dfreservoir <- df_all %>%
-  filter(model == "Reservoir FS (GA)", update == "No") %>%
-  mutate(outcome = if_else(outcome < 10, 10, outcome),
-         pred = if_else(pred < 10, 10, pred),
-         hosp = if_else(hosp < 10, 10, hosp))
-
-dfRepeatReservoir <- mclapply(X = seq_len(nboot),
-                              mc.cores = parallel::detectCores()-2,
-                              function(boot_i){
-                                lapply(X = vec_nb_esn,
-                                       function(nb_esn){
-                                         MAE <- dfreservoir %>%
-                                           group_by(outcomeDate) %>%
-                                           sample_n(nb_esn, replace = TRUE) %>%
-                                           summarise(outcome = unique(outcome),
-                                                     hosp = unique(hosp),
-                                                     pred = median(pred),
-                                                     .groups = "drop") %>%
-                                           mutate(AE = abs(pred - outcome)) %>%
-                                           pull(AE) %>%
-                                           mean(na.rm = T)
-                                         
-                                         data.frame(nb_esn = nb_esn,
-                                                    MAE = MAE)
-                                       }) %>%
-                                  bind_rows()
-                              }) %>%
-  bind_rows(.id = "boot_i")
-
-plot_repeated_reservoir <- dfRepeatReservoir %>%
-  mutate(MAE = if_else(MAE > 60, 60, MAE)) %>%
-  group_by(nb_esn) %>%
-  summarise(median_MAE = median(MAE),
-            ci_inf = quantile(MAE, 0.025),
-            ci_sup = quantile(MAE, 0.975)) %>%
-  ggplot(mapping = aes(x = nb_esn, y = median_MAE, ymin = ci_inf, ymax = ci_sup)) +
-  geom_ribbon(fill = "grey") +
+```{r lineperf}
+df_perf |> 
+  mutate(pmutCat = as.factor(pmutCat),
+         pmutCat = forcats::fct_rev(pmutCat)) |> 
+  ggplot(mapping = aes(x = lr_sigma, y = AE, color = pmutCat, group = pmutCat)) +
   geom_point() +
   geom_line() +
+  facet_wrap(update ~ .) +
   theme_minimal() +
-  labs(x = "Nb of Reservoir",
-       y = "MAE (95% CI)")
-
-plot_repeated_reservoir
-
-ggsave(here::here("results/final_figures/plot_repeated_reservoir.pdf"),
-       plot = plot_repeated_reservoir,
-       width = 4,
-       height = 4)
-```
-
-## Graphical forecast
-
-```{r}
-#| label: model-prediction
-#| fig-cap: "Model prediction"
-
-df_individual_model <- df_all %>%
-  filter(update == "No",
-         model %in% c("Elastic-net (RS)",
-                      "XGB (RS)",
-                      "LSTM-PCA",
-                      "LSTM-RC-GA",
-                      "Transformers-RC-GA",
-                      "Transformers-PCA",
-                      "Reservoir FS (RS)",
-                      "Reservoir no FS (GA)",
-                      "Reservoir FS (GA) all anteriority",
-                      "Reservoir FS (GA - PCA)",
-                      "Reservoir FS (GA)",
-                      "Reservoir FS (GA - 2000)")) %>%
-  group_by(outcomeDate, model) %>%
-  summarise(outcome = unique(outcome),
-            hosp = unique(hosp),
-            pred = median(pred),
-            .groups = "drop") %>%
-  mutate(outcomeDate = as.Date(outcomeDate)) %>%
-  tidyr::pivot_wider(names_from = model, values_from = pred) %>%
-  tidyr::pivot_longer(cols = -c(outcomeDate)) %>%
-  mutate(name = factor(name,
-                       levels = c("outcome",
-                                  "hosp",
-                                  "Elastic-net (RS)",
-                                  "XGB (RS)",
-                                  "LSTM-PCA",
-                                  "LSTM-RC-GA",
-                                  "Transformers-RC-GA",
-                                  "Transformers-PCA",
-                                  "Reservoir FS (RS)",
-                                  "Reservoir no FS (GA)",
-                                  "Reservoir FS (GA) all anteriority",
-                                  "Reservoir FS (GA - PCA)",
-                                  "Reservoir FS (GA)",
-                                  "Reservoir FS (GA - 2000)")),
-         name = forcats::fct_recode(name,
-                                    "Observed" = "outcome",
-                                    "Hosp t+14" = "hosp"))
-
-plot_figure_performance_no_update <- df_individual_model %>%
-  filter(name %in% c("Hosp t+14",
-                     "Observed",
-                     "Reservoir FS (GA - 2000)",
-                     "XGB (RS)",
-                     "LSTM-PCA")) %>%
-  ggplot(mapping = aes(x = outcomeDate, y = value, color = name)) +
-  geom_line() +
-  ggstar::geom_star(x = as.Date("2021-08-19"),
-                    starshape = 23,
-                    color = "white",
-                    fill = "#FFB703",
-                    y = 80,
-                    size=5,
-                    inherit.aes = FALSE) +
-  annotate(geom = "text",
-           label = "Holiday break",
-           x = as.Date("2021-08-19"),
-           y = 130,
-           size=3.5,
-           angle = 90) +
-  scale_color_manual(values = c("black", "darkgrey", "#005F73", "#94D2BD", "#AE2012")) +
-  scale_x_date(breaks = "2 month", date_labels = "%y-%m") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "Date",
-       y = "Hospitalizations",
-       color = "",
-       fill = "") +
-  guides(color = guide_legend(ncol = 2))
-
-
-plot_figure_performance_no_update
-
-ggsave(here::here("results/final_figures/plot_figure_performance_no_update.pdf"),
-       plot = plot_figure_performance_no_update,
-       width = 4,
-       height = 5)
-```
-
-```{r}
-#| label: model-prediction-all
-#| fig-cap: "All model prediction depending on update"
-
-plot_figure_performance_all <- df_all %>%
-  filter(model %in% c("Elastic-net (RS)",
-                      "XGB (RS)",
-                      "LSTM-PCA",
-                      "LSTM-RC-GA",
-                      "Transformers-RC-GA",
-                      "Transformers-PCA",
-                      "Reservoir FS (RS)",
-                      "Reservoir no FS (GA)",
-                      "Reservoir FS (GA) all anteriority",
-                      "Reservoir FS (GA - PCA)",
-                      "Reservoir FS (GA)",
-                      "Reservoir FS (GA - 2000)")) %>%
-  group_by(outcomeDate, model, update) %>%
-  summarise(hosp = unique(hosp),
-            outcome = unique(outcome),
-            pred = median(pred),
-            .groups = "drop") %>%
-  mutate(outcomeDate = as.Date(outcomeDate),
-         update = if_else(update == "Yes", "Hp updated each month", "Hp set at 2021-03-01")) %>%
-  ggplot(mapping = aes(x = outcomeDate, y = pred, color = update)) +
-  geom_line() +
-  geom_line(mapping = aes(y = outcome, color = " Observed")) +
-  geom_line(mapping = aes(y = hosp, color = "Hosp t+14")) +
-  scale_color_manual(values = c("black", "darkgrey", "#AE2012", "#EE9B00")) +
-  scale_x_date(breaks = "2 month", date_labels = "%y-%m") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "Date",
-       y = "Hospitalizations",
-       color = "") +
-  guides(color = guide_legend(ncol = 3)) +
-  facet_wrap(model ~ ., ncol = 2)
-
-plot_figure_performance_all
-
-ggsave(here::here("results/final_figures/plot_figure_performance_all.pdf"),
-       plot = plot_figure_performance_all,
-       width = 8, height = 10)
-
+  scale_color_manual(values = c("black", "#03045E", "#0077B6", "#00B4D8")) +
+  scale_x_log10(breaks = df_perf$lr_sigma |> unique()) +
+  labs(y = "Mean absolute error",
+       x = "Leaking rate sigma",
+       color = "P(mutation categorical genes)")
 ```
 
 # Hyperparameters
 
 ```{r}
-path_hp <- here::here("results/final_prediction/hyperparameter")
+path_hp <- here::here("results/experience_1/hyperparameters/")
 ls_files_full <- list.files(path_hp, full.names = TRUE, recursive = TRUE)
-names(ls_files_full) <- gsub(ls_files_full, pattern = paste0(path_hp, "/"), replacement = "")
-ls_files_full <- ls_files_full[!grepl(names(ls_files_full), pattern = "^2000units")]
-
-numeric_hp <- c(
-  "ridge",
-  "l1_ratio",
-  "spectral_radius",
-  "leaking_rate",
-  "input_scaling",
-  "n_estimators",
-  "max_depth",
-  "learning_rate",
-  "subsample",
-  "colsample_bytree",
-  "pca"
-)
+numeric_hp <- c("ridge",
+                "spectral_radius",
+                "leaking_rate",
+                "input_scaling")
 
 df_all_hp <- lapply(ls_files_full,
-                    function(x) read.csv(x) %>%
-                      mutate_all(as.character) %>%
-                      tibble::rowid_to_column(var = "genetic_id")) %>%
-  bind_rows(.id = "file_i") %>%
-  mutate_at(
-    .vars = c(numeric_hp, "time_seconds", "value"),
-    .funs = ~ as.numeric(sub(",", ".", .x, fixed = TRUE))
-  ) %>%
-  tidyr::separate_wider_delim(cols = file_i,
-                              delim = "/",
-                              names = c("model", "date")) %>%
-  mutate(model = factor(model,
-                        levels = c("hp_GeneticSingleIs_GA",
-                                   "hp_GeneticSingleIs_GA_20",
-                                   "hp_GeneticSingleIs_GA_20esn_week",
-                                   "hp_GeneticSingleIs_RS",
-                                   "hp_SingleIs_GA",
-                                   "hp_GeneticSingleIs_GA_1000anteriorite",
-                                   "hp_GeneticSingleIs_GA_PCA",
-                                   "hp_enet_pred_RS",
-                                   "hp_xgb_pred_RS"),
-                        labels = c("Reservoir FS (GA)",
-                                   "Reservoir FS (GA - 20 esn)",
-                                   "Reservoir FS (GA - 20 esn - weekly update)",
-                                   "Reservoir FS (RS)",
-                                   "Reservoir no FS (GA)",
-                                   "Reservoir FS (GA) all anteriority",
-                                   "Reservoir FS (GA - PCA)",
-                                   "Elastic-net (RS)",
-                                   "XGB (RS)")),
-         date = gsub(pattern = ".csv", x = date, replacement = ""),
-         date = as.Date(date),
-         date = if_else(is.na(date), as.Date("2021-03-01"), date),
-         last_used_observation = date) %>%
+                    function(file_i) readr::read_csv(file_i, id = "model")) |> 
+  bind_rows() |> 
+  tibble::rowid_to_column(var = "genetic_id") |> 
+  mutate(file_hp = gsub(x = file_hp, pattern = ".csv", replacement = ""),
+         file_hp = if_else(grepl(x = file_hp,
+                                 pattern = "GeneticSingleIs_GA_GAHPDEF"),
+                           "2021-03-01",
+                           file_hp),
+         last_used_observation = as.Date(file_hp),
+         model = gsub(model, pattern = ".*GeneticSingleIs_GA_GAHPDEF_", replacement = "")) |> 
+  tidyr::separate_wider_regex(
+    model,
+    patterns = c("pmutQuant",
+                 pmutQuant = "[0-9]+", 
+                 "_pmutCat", 
+                 pmutCat = "[0-9]+",
+                 "_sigmahalv",
+                 lr_sigma = "[0-9]+",
+                 "_.*")) |> 
+  mutate(across(.cols = c(pmutQuant, pmutCat, lr_sigma),
+                .fns = ~ as.numeric(.x)/1000),
+         short_name_model = paste0("PmutQuant = ",
+                                   pmutQuant, " ; PmutCat = ",
+                                   pmutCat, " ; lr sigma = ",
+                                   lr_sigma)) |> 
   filter(last_used_observation < as.Date("2022-01-17"),
-         value != 1000) %>%
-  filter(model != "Reservoir FS (GA) all anteriority")
-
-## save best model most important features
-df_all_hp %>%
-  filter(model == "Reservoir FS (GA)") %>%
-  group_by(last_used_observation) %>%
-  slice_min(value, n = 1) %>%
-  select(c(last_used_observation, ends_with("_bin"))) %>%
-  tidyr::pivot_longer(cols = -last_used_observation) %>%
-  filter(value == "y") %>%
-  select(last_used_observation, name) %>%
-  mutate(name = gsub(name, replacement = "", pattern = "_bin")) %>%
-  write.csv(here::here("results/best_features.csv"), row.names = FALSE)
+         value != 1000)
 
 ## get the best 40 by date
 df_all_hp_best40 <- df_all_hp %>%
-  group_by(model, last_used_observation) %>%
-  slice_min(value, n = 40)
+  group_by(short_name_model, last_used_observation) %>%
+  slice_min(value, n = 40) |> 
+  ungroup()
 ```
 
 ## Numeric hyperparameters
 
-```{r fig.height=10}
-#| label: numeric-hp
-#| fig-cap: "Numeric hyperparameters"
-
-df_all_hp_best40_numeric <- df_all_hp_best40 %>%
-  select(all_of(c("job_id", "model", "date", "value", numeric_hp))) %>%
-  tidyr::pivot_longer(cols = numeric_hp,
-                      values_to = "HP_value",
-                      names_to = "HP_name") %>%
-  na.omit()
-
-ls_hpnum_plots <- df_all_hp_best40_numeric %>%
-  filter(!model %in% c("Reservoir FS (GA - 20 esn)",
-                       "Reservoir FS (GA - 20 esn - weekly update)")) |> 
-  group_by(model) %>%
-  group_split() %>%
-  lapply(FUN = function(df_i){
-    model_title <- df_i$model %>% unique()
-    df_i %>%
-      group_by(last_used_observation) %>%
-      mutate(rank = dense_rank(value),
-             rank_factor = if_else(rank == 1, "Best", "Other")) %>%
-      ungroup() %>%
-      mutate(last_used_observation = last_used_observation) %>%
-      arrange(desc(rank_factor)) %>%
-      ggplot(mapping = aes(y = value, x = HP_value, fill = last_used_observation, size = rank_factor, color = rank_factor)) +
-      geom_point(shape = 21) +
-      facet_wrap(HP_name ~ ., scales = "free_x") +
-      scale_fill_viridis_c(direction = -1,
-                           labels = scales::date_format("%Y-%m"),
-                           trans = "date",
-                           breaks = as.Date(c("2021-03-01",
-                                              "2021-05-01",
-                                              "2021-07-01",
-                                              "2021-09-01",
-                                              "2021-11-01",
-                                              "2022-01-01")),
-                           limits = as.Date(c("2021-03-01",
-                                              "2022-01-01"))) +
-      scale_size_manual(values = c(4,2)) +
-      scale_color_manual(values = c("red", "#AAAAAA00")) +
-      scale_x_log10() +
-      theme_minimal() +
-      labs(x = "Hyperparameter value",
-           y = "MAE",
-           fill = "Update date",
-           color = "",
-           size = "",
-           title = model_title) %>%
-      return()
-  })
-
-plot_all_hp <- ggpubr::ggarrange(plotlist = ls_hpnum_plots, common.legend = TRUE, ncol = 2, nrow = 3, legend = "right")
-
-plot_all_hp
-
-ggsave(here::here("results/final_figures/plot_all_hp.pdf"),
-       plot = plot_all_hp,
-       width = 10, height = 12)
+```{r fig.height=8, fig.cap="Sanity check leaking rate, variance of leaking rate of genetic individuals should increase with leaking rate mutation sigma"}
+plot_sanity_numeric_hp <- df_all_hp |> 
+  group_by(pmutCat, lr_sigma, last_used_observation) |> 
+  summarise(var_lr = var(leaking_rate), .groups = "drop") |> 
+  mutate(pmutCat = as.factor(pmutCat),
+         last_used_observation = as.factor(last_used_observation)) |> 
+  ggplot(mapping = aes(x = lr_sigma, y = var_lr, color = last_used_observation, shape = pmutCat)) +
+  geom_point() +
+  labs(x = "Leaking rate mutation sigma",
+       y = "Variance of leaking rate") +
+  scale_x_log10(breaks = unique(df_all_hp$lr_sigma)) +
+  theme_minimal()
+plot_sanity_numeric_hp
 ```
 
-```{r fig.height=10}
-#| label: numeric-hp-rc-ga
-#| fig-cap: "Numeric hyperparameters of RC-GA"
 
-dfGeneticSinglIS_GA_visu <- df_all_hp %>%
-  filter(model == "Reservoir FS (GA)") %>%
-  group_by(date) %>%
-  mutate(rank = dense_rank(value),
-         rank_factor = case_when(rank <= 40 ~ "Best 40",
-                                 rank <= 200 ~ "Best 200",
-                                 rank > 200 ~ "Other"),
-         rank_factor = factor(rank_factor,
-                              levels = c("Best 200",
-                                         "Best 40",
-                                         "Other"))) %>%
-  ungroup() %>%
-  select(all_of(c("rank_factor", "genetic_id", "last_used_observation", "value", "spectral_radius", "leaking_rate", "input_scaling", "ridge"))) %>%
-  tidyr::pivot_longer(cols = c("spectral_radius", "leaking_rate", "input_scaling", "ridge"),
-                      values_to = "HP_value", names_to = "HP_name") %>%
-  mutate(value = if_else(value > 50, 50, value))
-
-plot_genetic_algo <- ggplot(data = dfGeneticSinglIS_GA_visu,
-                            mapping = aes(x = HP_value, y = value, color = genetic_id)) +
-  geom_point() +
-  # scale_color_brewer() +
-  scale_color_viridis_c(direction = -1, option = "C", begin = 0.3) +
-  labs(color = "Genetic individual") +
-  ggnewscale::new_scale_color() +
-  geom_point(data = dfGeneticSinglIS_GA_visu %>%
-               filter(rank_factor != "Other") %>%
-               arrange(rank_factor), 
-             aes(color = rank_factor)) +
-  scale_color_manual(values = c("black", "green")) +
-  facet_grid(last_used_observation ~ HP_name, scales = "free_x") +
-  scale_y_log10() +
-  scale_x_log10(breaks = c(1e-10, 1e-5, 1, 1e5),
-                labels = c("-10", "-5", "1", "5")) +
+```{r fig.height=8, fig.cap="Numeric hyperparameter, density of all genetic individuals."}
+plot_numeric_hp <- df_all_hp |> 
+  select(pmutCat, lr_sigma, last_used_observation, all_of(numeric_hp)) |> 
+  tidyr::pivot_longer(cols = numeric_hp, names_to = "hyperparameter") |> 
+  mutate(pmutCat = as.factor(pmutCat),
+         pmutCat = forcats::fct_rev(pmutCat),
+         last_used_observation = as.factor(last_used_observation),
+         last_used_observation = forcats::fct_rev(last_used_observation)) |> 
+  ggplot(mapping = aes(x = value,
+                       y = last_used_observation,
+                       group = interaction(last_used_observation, hyperparameter),
+                       fill = hyperparameter,
+                       color = hyperparameter)) +
+  ggridges::geom_density_ridges(alpha = 0.5) +
+  facet_grid(pmutCat ~ lr_sigma, scales = "free_y", labeller = label_both, switch = "both") +
+  scale_x_log10() +
+  scale_fill_manual(values = c("#264653", "#2A9D8F", "#F4A261", "#E76F51")) +
+  scale_color_manual(values = c("#264653", "#2A9D8F", "#F4A261", "#E76F51")) +
   theme_minimal() +
-  theme(strip.text.y = element_text(angle = 0),
-        legend.position = "bottom") +
-  labs(x = "Log(Hyperparameter value)",
-       y = "MAE",
-       color = "")
+  theme(legend.position = "bottom") +
+  labs(x = "Hyperparameter value",
+       y = "Update Date")
 
-# dfGeneticSinglIS_GA_visu %>%
-#   filter(last_used_observation == "2022-01-01", rank_factor == "Best 40") %>%
-#   group_by(HP_name) %>%
-#   summarise(min(HP_value), max(HP_value))
-
-plot_genetic_algo
-
-ggsave(here::here("results/final_figures/plot_genetic_algo.pdf"),
-       plot = plot_genetic_algo,
-       useDingbats = TRUE,
-       width = 5,
-       height = 7)
+plot_numeric_hp
 ```
 
-```{r fig.height=10}
-#| label: numeric-hp-rc-ga-20
-#| fig-cap: "Numeric hyperparameters of RC-GA with 20 reservoirs"
-
-dfGeneticSinglIS_GA_visu20 <- df_all_hp %>%
-  filter(model == "Reservoir FS (GA - 20 esn)") %>%
-  group_by(date) %>%
-  mutate(rank = dense_rank(value),
-         rank_factor = case_when(rank <= 40 ~ "Best 40",
-                                 rank <= 200 ~ "Best 200",
-                                 rank > 200 ~ "Other"),
-         rank_factor = factor(rank_factor,
-                              levels = c("Best 200",
-                                         "Best 40",
-                                         "Other"))) %>%
-  ungroup() %>%
-  select(all_of(c("rank_factor", "genetic_id", "last_used_observation", "value", "spectral_radius", "leaking_rate", "input_scaling", "ridge"))) %>%
-  tidyr::pivot_longer(cols = c("spectral_radius", "leaking_rate", "input_scaling", "ridge"),
-                      values_to = "HP_value", names_to = "HP_name") %>%
-  mutate(value = if_else(value > 50, 50, value))
-
-plot_genetic_algo20 <- ggplot(data = dfGeneticSinglIS_GA_visu20,
-                              mapping = aes(x = HP_value, y = value, color = genetic_id)) +
-  geom_point() +
-  # scale_color_brewer() +
-  scale_color_viridis_c(direction = -1, option = "C", begin = 0.3) +
-  labs(color = "Genetic individual") +
-  ggnewscale::new_scale_color() +
-  geom_point(data = dfGeneticSinglIS_GA_visu20 %>%
-               filter(rank_factor != "Other") %>%
-               arrange(rank_factor), 
-             aes(color = rank_factor)) +
-  scale_color_manual(values = c("black", "green")) +
-  facet_grid(last_used_observation ~ HP_name, scales = "free_x") +
-  scale_y_log10() +
-  scale_x_log10(breaks = c(1e-10, 1e-5, 1, 1e5),
-                labels = c("-10", "-5", "1", "5")) +
+```{r fig.height=8, fig.cap="Numeric hyperparameter, density of 40 best genetic individuals per hyperparameter update date."}
+plot_best_numeric_hp <- df_all_hp_best40 |> 
+  select(pmutCat, lr_sigma, last_used_observation, all_of(numeric_hp)) |> 
+  tidyr::pivot_longer(cols = numeric_hp, names_to = "hyperparameter") |> 
+  mutate(pmutCat = as.factor(pmutCat),
+         pmutCat = forcats::fct_rev(pmutCat),
+         last_used_observation = as.factor(last_used_observation),
+         last_used_observation = forcats::fct_rev(last_used_observation)) |> 
+  ggplot(mapping = aes(x = value,
+                       y = last_used_observation,
+                       group = interaction(last_used_observation, hyperparameter),
+                       fill = hyperparameter,
+                       color = hyperparameter)) +
+  ggridges::geom_density_ridges(alpha = 0.5) +
+  facet_grid(pmutCat ~ lr_sigma, scales = "free_y", labeller = label_both, switch = "both") +
+  scale_x_log10() +
+  scale_fill_manual(values = c("#264653", "#2A9D8F", "#F4A261", "#E76F51")) +
+  scale_color_manual(values = c("#264653", "#2A9D8F", "#F4A261", "#E76F51")) +
   theme_minimal() +
-  theme(strip.text.y = element_text(angle = 0),
-        legend.position = "bottom") +
-  labs(x = "Log(Hyperparameter value)",
-       y = "MAE",
-       color = "")
+  theme(legend.position = "bottom") +
+  labs(x = "Hyperparameter value",
+       y = "Update Date")
 
-# dfGeneticSinglIS_GA_visu %>%
-#   filter(last_used_observation == "2022-01-01", rank_factor == "Best 40") %>%
-#   group_by(HP_name) %>%
-#   summarise(min(HP_value), max(HP_value))
-
-plot_genetic_algo20
-
-ggsave(here::here("results/final_figures/plot_genetic_algo20.pdf"),
-       plot = plot_genetic_algo20,
-       useDingbats = TRUE,
-       width = 5,
-       height = 7)
-```
-
-```{r fig.height=10}
-#| label: numeric-hp-rc-ga-20-weekw
-#| fig-cap: "Numeric hyperparameters of RC-GA with 20 reservoirs"
-dfGeneticSinglIS_GA_visu20week <- df_all_hp %>%
-  filter(model == "Reservoir FS (GA - 20 esn - weekly update)") %>%
-  group_by(date) %>%
-  mutate(rank = dense_rank(value),
-         rank_factor = case_when(rank <= 40 ~ "Best 40",
-                                 rank <= 200 ~ "Best 200",
-                                 rank > 200 ~ "Other"),
-         rank_factor = factor(rank_factor,
-                              levels = c("Best 200",
-                                         "Best 40",
-                                         "Other"))) %>%
-  ungroup() %>%
-  select(all_of(c("rank_factor", "genetic_id", "last_used_observation", "value", "spectral_radius", "leaking_rate", "input_scaling", "ridge"))) %>%
-  tidyr::pivot_longer(cols = c("spectral_radius", "leaking_rate", "input_scaling", "ridge"),
-                      values_to = "HP_value", names_to = "HP_name") %>%
-  mutate(value = if_else(value > 50, 50, value))
-
-plot_genetic_algo20week <- ggplot(data = dfGeneticSinglIS_GA_visu20week,
-                                  mapping = aes(x = HP_value,
-                                                y = as.numeric(last_used_observation),
-                                                color = genetic_id)) +
-  geom_point() +
-  # scale_color_brewer() +
-  scale_color_viridis_c(direction = -1, option = "C", begin = 0.3) +
-  labs(color = "Genetic individual") +
-  ggnewscale::new_scale_color() +
-  geom_point(data = dfGeneticSinglIS_GA_visu20week %>%
-               filter(rank_factor != "Other") %>%
-               arrange(rank_factor), 
-             aes(color = rank_factor)) +
-  scale_color_manual(values = c("black", "green")) +
-  facet_grid(. ~ HP_name, scales = "free_x") +
-  scale_y_reverse(labels = unique(as.character(lubridate::as_date(dfGeneticSinglIS_GA_visu20week$last_used_observation))),
-                  breaks = unique(as.numeric(dfGeneticSinglIS_GA_visu20week$last_used_observation))) +
-  # scale_y_date(date_breaks = "2 weeks", date_labels = "%d-%m-%y") +
-  scale_x_log10(breaks = c(1e-10, 1e-5, 1, 1e5),
-                labels = c("-10", "-5", "1", "5")) +
-  theme_minimal() +
-  theme(strip.text.y = element_text(angle = 0),
-        legend.position = "bottom") +
-  labs(x = "Log(Hyperparameter value)",
-       y = "MAE",
-       color = "")
-plot_genetic_algo20week
-
-# dfGeneticSinglIS_GA_visu %>%
-#   filter(last_used_observation == "2022-01-01", rank_factor == "Best 40") %>%
-#   group_by(HP_name) %>%
-#   summarise(min(HP_value), max(HP_value))
-
-plot_genetic_algo20week
-
-ggsave(here::here("results/final_figures/plot_genetic_algo20week.pdf"),
-       plot = plot_genetic_algo20week,
-       useDingbats = TRUE,
-       width = 5,
-       height = 7)
+plot_best_numeric_hp
 ```
 
 ## Categorical hyperparameters
 
 ```{r}
-#| label: feature-selection-rc-ga
-#| fig-cap: "Feature selection by RC-GA"
-
-categorical_features <- grep(colnames(df_all_hp_best40), pattern = "_bin$", value = TRUE)
-df_all_hp_best40_categorical <- df_all_hp_best40 %>%
-  select(all_of(c("job_id", "model", "last_used_observation", "value", categorical_features))) %>%
-  tidyr::pivot_longer(cols = categorical_features,
-                      values_to = "HP_value",
-                      names_to = "HP_name") %>%
-  na.omit() %>%
-  group_by(model, last_used_observation, HP_name) %>%
-  summarise(freq_select = mean(HP_value == "y"),
-            .groups = "drop")
-
-ls_hpcat_plots <- list()
-df_all_hp_best40_categorical %>%
-  mutate(HP_name = FctCleanFeaturesName(HP_name)) %>%
-  group_by(model) %>%
-  group_split() %>%
-  lapply(FUN = function(df_i){
-    
-    model_title <- df_i$model %>% unique() %>% as.character
-    
-    vec_features_i <- df_i %>%
-      filter(last_used_observation == min(last_used_observation)) %>%
-      slice_max(freq_select, n = 10) %>%
-      pull(HP_name)
-    
-    plot_importance <- df_i %>%
-      filter(HP_name %in% vec_features_i) %>%
-      ggplot(mapping = aes(x = last_used_observation, color = freq_select, y = HP_name,
-                           linewidth = freq_select)) +
-      geom_line() +
-      scale_color_distiller(breaks = seq(0,1,by=0.5),
-                            limits = c(0,1),
-                            direction = 1,
-                            palette = "Greys") +
-      scale_linewidth_continuous(breaks = seq(0,1,by=0.5),
-                                 limits = c(0,1)) +
-      scale_x_date(date_labels = "%y-%m") +
-      theme_minimal() +
-      labs(x = "Update date",
-           y = "",
-           color = "Freq. select",
-           linewidth = "Freq. select",
-           title = model_title) +
-      theme(legend.position = "bottom",
-            legend.box="vertical")
-    
-    ls_hpcat_plots[[model_title]] <<- plot_importance
-    return()
-  })
-
-##### elastic-net and xgb importance when updating hyperparameter monthly for comparison
-list_importance_enet_xgb <- list("Elastic-net" = here::here("results/final_prediction/importance/enet_pred_RS_importance_combined.csv"),
-                                 "XGBoost" = here::here("results/final_prediction/importance/xgb_pred_RS_importance_combined.csv"))
-
-lapply(names(list_importance_enet_xgb),
-       function(x){
-         df_imp_enet <- data.table::fread(list_importance_enet_xgb[[x]]) %>%
-           mutate(last_used_observation = hp_date + 14) %>%
-           group_by(outcomeDate) %>%
-           slice_max(last_used_observation) %>%
-           group_by(last_used_observation, features) %>%
-           summarise(importance = mean(importance),
-                     .groups = "drop")
-         
-         best_enet_features_first_date <- df_imp_enet %>%
-           slice_min(last_used_observation) %>%
-           slice_max(abs(importance), n = 10) %>%
-           pull(features)
-         
-         color_lab <- ifelse(x == "XGBoost", "Mean Gain", "Mean Beta")
-         
-         plot_importance <- df_imp_enet %>%
-           filter(features %in% best_enet_features_first_date) %>%
-           mutate(features = FctCleanFeaturesName(features),
-                  features = factor(features),
-                  features = forcats::fct_reorder(features, abs(importance))) %>%
-           ggplot(mapping = aes(x = last_used_observation, color = importance, y = features,
-                                linewidth = importance)) +
-           geom_line() +
-           scale_color_distiller(direction = 1,
-                                 palette = "Greys") +
-           scale_x_date(date_labels = "%y-%m") +
-           theme_minimal() +
-           labs(x = "Update date",
-                y = "",
-                color = color_lab,
-                linewidth = color_lab,
-                title = x) +
-           theme(legend.position = "bottom",
-                 legend.box="vertical")
-         
-         ls_hpcat_plots[[x]] <<- plot_importance
-         return()
-       })
-
-ls_hpcat_plots$`Reservoir FS (GA)`
-
-ggsave(here::here("results/final_figures/plot_feature_imp_RCGA.pdf"),
-       plot = ls_hpcat_plots$`Reservoir FS (GA)`,
-       width = 6, height = 5)
-
+df_all_hp_best40_qual <- df_all_hp_best40 |> 
+  select(c(genetic_id, short_name_model, job_id, pmutCat, lr_sigma, last_used_observation, ends_with("_bin")))
 ```
 
-```{r fig.height=15}
-#| label: feature-selection-all
-#| fig-cap: "Feature selection"
-
-plot_feature_imp_temp <- ggpubr::ggarrange(plotlist = ls_hpcat_plots[1:2],
-                                           ncol = 2, nrow = 1,
-                                           legend = "bottom",
-                                           common.legend = TRUE)
-
-plot_feature_imp <- gridExtra::grid.arrange(plot_feature_imp_temp,
-                                            ls_hpcat_plots$`Elastic-net`,
-                                            ls_hpcat_plots$XGBoost,
-                                            layout_matrix = rbind(c(1, 1),
-                                                                  c(2, 3)))
-
-
-ggpubr::ggarrange(plotlist = ls_hpcat_plots,
-                  ncol = 1, nrow = 4,
-                  legend = "bottom")
-
-ggsave(here::here("results/final_figures/plot_feature_imp.pdf"),
-       plot = plot_feature_imp,
-       width = 12, height = 9)
-
-```
-
-## Ridge update of 2000 units reservoir
-
-### Three reservoirs
-
-```{r}
-#| label: ridge-for-2000-units
-#| fig-cap: "Ridge hyperparameter of 2000 units RC-GA"
-
-list.files(path = here::here("results/2000units/"), full.names = T) %>%
-  lapply(data.table::fread) %>%
-  bind_rows() %>%
-  ggplot(mapping = aes(x = ridge, y = value)) +
-  geom_point() +
-  scale_x_log10(breaks = 10^(2:7)) +
-  scale_y_log10() +
+```{r fig.height=8, fig.cap="Number of selected features among the best genetic individuals."}
+df_all_hp_best40_qual |> 
+  tidyr::pivot_longer(cols = ends_with("_bin")) |> 
+  group_by(genetic_id, pmutCat, lr_sigma, last_used_observation) |> 
+  summarise(n_features = sum(value == "y"), .groups = "drop") |> 
+  mutate(last_used_observation = as.factor(last_used_observation),
+         pmutCat = as.factor(pmutCat),
+         pmutCat = forcats::fct_rev(pmutCat)) |> 
+  ggplot(mapping = aes(color = pmutCat, y = n_features, x = lr_sigma, group = interaction(pmutCat, lr_sigma))) +
+  geom_boxplot() +
+  facet_grid(last_used_observation ~ .) +
+  scale_color_manual(values = c("black", "#03045E", "#0077B6", "#00B4D8")) +
+  scale_x_log10(breaks = unique(df_all_hp_best40_qual$lr_sigma)) +
   theme_minimal() +
-  labs(x = "ridge", y = "MAE")
-```
-
-### Twenty reservoirs
-
-```{r}
-#| label: ridge-for-2000-units
-#| fig-cap: "Ridge hyperparameter of 2000 units RC-GA"
-
-list.files(path = here::here("results/2000units_20reservoirs/"), full.names = T) %>%
-  lapply(data.table::fread) %>%
-  bind_rows() %>%
-  ggplot(mapping = aes(x = ridge, y = value)) +
-  geom_point() +
-  scale_x_log10(breaks = 10^(2:7)) +
-  scale_y_log10() +
-  theme_minimal() +
-  labs(x = "ridge", y = "MAE")
+  theme(strip.text.y = element_text(angle = 0)) +
+  labs(x = "Leaking rate sigma mutation",
+       y = "Number of selected features",
+       color = "P(mutation categorical genes)")
 ```
 
 
-
-# Failure of monthly update
-
-```{r}
-############# explore why hp update did not work for GA
-df_leaking_rate_RCGA <- df_all_hp %>%
-  filter(model == "Reservoir FS (GA)") %>%
-  mutate(hp_date = date+14) %>%
-  select(job_id, leaking_rate, hp_date) %>% 
-  distinct()
-
-df_by_lr <- df_all %>%
-  filter(model == "Reservoir FS (GA)", update == "No") %>%
-  mutate(job_id = gsub(x = trial, pattern = "^trial_|_train365$", replacement = ""),
-         hp_date = as.Date(hp_date)) %>%
-  left_join(df_leaking_rate_RCGA, by = c("job_id", "hp_date")) %>%
-  mutate(leaking_rate = factor(leaking_rate < 1e-3,
-                               levels = c(T, F),
-                               labels = c("< 1e-3", "> 1e-3")),
-         outcomeDate = as.Date(outcomeDate))
-
-df_perf_by_lr <- df_by_lr %>%
-  mutate(outcome = if_else(outcome < 10, 10, outcome),
-         pred = if_else(pred < 10, 10, pred),
-         hosp = if_else(hosp < 10, 10, hosp)) %>%
-  group_by(outcomeDate, model, leaking_rate, update) %>%
-  summarise(outcome = unique(outcome),
-            hosp = unique(hosp),
-            pred = median(pred),
-            n = n(),
-            .groups = "drop") %>%
-  mutate(AE = abs(pred - outcome),
-         RE = AE/outcome,
-         baseline_AE = abs(hosp - outcome),
-         AE_baseline = AE - baseline_AE,
-         RE_baseline = AE/baseline_AE) %>%
-  group_by(model, update, leaking_rate, n) %>%
-  summarise(AE = mean(AE, na.rm = T),
-            AE_baseline = mean(AE_baseline, na.rm = T),
-            RE = median(RE, na.rm = TRUE),
-            RE_baseline = median(RE_baseline, na.rm = TRUE),
-            .groups = "drop")
-
-df_perf_by_lr %>%
-  # knitr::kable(format = "latex", booktabs = TRUE, digits = 2) %>%
-  knitr::kable(caption = "Performance by leaking rate") %>%
-  kableExtra::kable_styling()
-```
-
-```{r}
-#| label: prediction-by-lr
-#| fig-cap: "Prediction by leaking rate"
-
-plot_RCGA_noupdate_by_lr <- df_by_lr %>%
-  select(outcomeDate, outcome, hosp, pred, leaking_rate) %>%
-  tidyr::pivot_wider(values_from = pred, names_from = leaking_rate, values_fn = median, names_prefix = "leaking rate ") %>%
-  tidyr::pivot_longer(cols = -outcomeDate) %>%
-  mutate(name = factor(name,
-                       levels = c("outcome",
-                                  "hosp",
-                                  "leaking rate < 1e-3",
-                                  "leaking rate > 1e-3"),
-                       labels = c("Observed",
-                                  "Hosp t+14",
-                                  "leaking rate < 1e-3",
-                                  "leaking rate > 1e-3"))) %>%
-  ggplot(mapping = aes(x = outcomeDate, y = value, color = name)) +
-  geom_line() +
-  scale_color_manual(values = c("black", "darkgrey", "#FB8500", "#219EBC")) +
-  scale_x_date(breaks = "2 month", date_labels = "%y-%m") +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "Date",
-       y = "Hospitalizations",
-       color = "") +
-  guides(color = guide_legend(ncol = 2))
-
-plot_RCGA_noupdate_by_lr
-
-ggsave(here::here("results/final_figures/plot_RCGA_noupdate_by_lr.pdf"),
-       plot = plot_RCGA_noupdate_by_lr,
-       height = 4,
-       width = 8)
-```
-
-# Computing time
-
-<!-- ```{r} -->
-
-<!-- #| eval: false -->
-
-<!-- ### redo on local machine -->
-
-<!-- df_time_hp <- df_all_hp_best40 %>% -->
-
-<!--   slice_min(date) %>% -->
-
-<!--   filter(model %in% c("Reservoir FS (RS)", -->
-
-<!--                       "Elastic-net (RS)", -->
-
-<!--                       "XGB (RS)")) %>% -->
-
-<!--   mutate(nb_features = select(., ends_with("_bin")) %>% mutate_all(.funs = function(x) x == "y") %>% rowSums()) %>% -->
-
-<!--   select(model, time_seconds, all_of(numeric_hp), nb_features) %>% -->
-
-<!--   tidyr::pivot_longer(cols = -c("model", "time_seconds")) %>% -->
-
-<!--   na.omit() -->
-
-<!-- read.csv("data_obfuscated/20210329.csv") %>% -->
-
-<!--   select(-outcome, -outcomeDate, -START_DATE) %>% -->
-
-<!--   dim() -->
-
-<!-- plot_time_hp <- df_time_hp %>% -->
-
-<!--   ggplot(mapping = aes(x = value, y = time_seconds)) + -->
-
-<!--   geom_point(size = 0.01) + -->
-
-<!--   scale_x_log10() + -->
-
-<!--   facet_wrap(model ~ name, scales = "free", ncol = 3) + -->
-
-<!--   theme_minimal() -->
-
-<!-- df_time_hp %>% -->
-
-<!--   filter(name == "nb_features") %>% -->
-
-<!--   reframe(quantile(value, probs = c(0.25, 0.5, 0.75))) -->
-
-<!-- ggsave(here::here("results/final_figures/plot_time_hp.pdf"), -->
-
-<!--        plot = plot_time_hp, -->
-
-<!--        useDingbats = TRUE, -->
-
-<!--        height = 7, -->
-
-<!--        width = 7) -->
-
-<!-- df_all_hp %>% -->
-
-<!--   slice_min(date) %>% -->
-
-<!--   group_by(model) %>% -->
-
-<!--   summarise(q1 = quantile(time_seconds, 0.25), -->
-
-<!--             median = quantile(time_seconds, 0.5), -->
-
-<!--             q3 = quantile(time_seconds, 0.75)) -->
-
+<!-- ```{r factorialanalysis} -->
+<!-- # Loading data -->
+<!-- library(FactoMineR) -->
+<!-- res.mca <- df_all_hp_best40_qual |>  -->
+<!--   filter(last_used_observation == "2021-03-01") |>  -->
+<!--   select(pmutCat, lr_sigma, ends_with("_bin")) |>  -->
+<!--   mutate(across(.cols = c(pmutCat, lr_sigma), .fns = as.factor)) |>  -->
+<!--   MCA(ncp = 200, -->
+<!--       quali.sup = c("pmutCat", "lr_sigma"), -->
+<!--       graph=FALSE) -->
+<!-- res.hcpc <- HCPC(res.mca, graph = FALSE, nb.clust = -1, max = 100, min = 2) -->
+<!-- res.hcpc$desc.ind -->
 <!-- ``` -->
 
-We evaluated the time needed to train and forecast on January 2022
-month.
+<!-- ```{r} -->
+<!-- library(umap) -->
 
-```{r}
-c("results/timing.csv",
-  "results/timing_LSTM.csv",
-  "results/timing_TRASNFORMERS_PCA.csv") %>%
-  lapply(function(file_i){
-    read.csv(here::here(file_i))
-  }) %>%
-  bind_rows() %>%
-  select(Scenario, "Time (s)" = Elapsed.Time) %>%
-  mutate(Scenario = factor(Scenario,
-                           levels = c("enet_pred_RS",
-                                      "xgb_pred_RS",
-                                      "GeneticSingleIs_GA",
-                                      "GeneticSingleIs_GA_1000",
-                                      "LSTM",
-                                      "TRANSFORMER"),
-                           labels = c("Elastic-net (RS)",
-                                      "XGB (RS)",
-                                      "Reservoir FS (GA)",
-                                      "Reservoir FS (GA - 2000)",
-                                      "LSTM",
-                                      "Transformers"))) %>%
-  knitr::kable(caption = "Time on january month by algorithm. For RCGA, 40 RC where performed.") %>%
-  kableExtra::kable_styling()
-```
+<!-- df_freq_selection <- df_all_hp_best40_qual |>  -->
+<!--   tidyr::pivot_longer(cols = ends_with("_bin")) |>  -->
+<!--   group_by(short_name_model,  pmutCat, lr_sigma, last_used_observation, name) |>  -->
+<!--   summarise(value = mean(value == "y"), .groups = "drop") |>  -->
+<!--   tidyr::pivot_wider() -->
 
-# Reservoir vs raw features importance
+<!-- umap_test <- umap(df_freq_selection |>  -->
+<!--   select(ends_with("_bin"))) -->
 
-```{r}
-#| label: reservoir-vs-input
-#| fig-cap: "Reservoir layer vs input layer importance according ot output layer"
+<!-- umap_test$layout |>  -->
+<!--   as.data.frame() |>  -->
+<!--   bind_cols(df_freq_selection) |>  -->
+<!--   mutate(pmutCat = as.factor(pmutCat), -->
+<!--          lr_sigma = as.factor(lr_sigma)) |>  -->
+<!--   ggplot(mapping = aes(x = V1, y = V2, color = lr_sigma, shape = pmutCat)) + -->
+<!--   geom_point() -->
+<!-- ``` -->
 
-df_imp_reservoir_temp <- data.table::fread(here::here("results/final_prediction/importance/GeneticSingleIs_GA_importance_combined.csv")) %>%
-  slice_min(hp_date)
 
-vec_quantile <- c(0.25, .75)
-quantile_function <- lapply(vec_quantile,
-                            function(quantile) function(x) quantile(abs(x), quantile))
-names(quantile_function) <- paste0("q", vec_quantile*100)
+```{r freqselectionfeatures, fig.height=8}
+df_freq_selection <- df_all_hp_best40_qual |>  
+  tidyr::pivot_longer(cols = ends_with("_bin")) |>  
+  group_by(short_name_model,  pmutCat, lr_sigma, last_used_observation, name) |>  
+  summarise(value = mean(value == "y"), .groups = "drop") |> 
+  mutate(last_used_observation = as.factor(last_used_observation))
 
-plot_coef_input_vs_reservoir <- df_imp_reservoir_temp %>%
-  ungroup() %>%
-  select(features, importance, outcomeDate) %>%
-  mutate(reservoir_features = factor(grepl("reservoir", x = features),
-                                     levels = c(T, F),
-                                     labels = c("Reservoir",
-                                                "Input layer"))) %>%
-  group_by(outcomeDate, reservoir_features) %>%
-  summarise_at(.vars = "importance",
-               .funs = quantile_function) %>%
-  ggplot(mapping = aes(x = outcomeDate, fill = reservoir_features, ymin = q25, ymax = q75)) +
-  geom_ribbon(alpha = 0.7) +
-  theme_minimal() +
-  scale_fill_manual(values = c("#FB8500", "#219EBC")) +
+ggplot(df_freq_selection,
+       mapping = aes(x = value,
+                     fill = last_used_observation,
+                     color = last_used_observation,
+                     y = lr_sigma,
+                     group = interaction(lr_sigma, last_used_observation))) +
+  ggridges::geom_density_ridges(alpha = 0.2) +
+  facet_grid(. ~ pmutCat, labeller = label_both) +
+  scale_fill_viridis_d() +
+  scale_color_viridis_d() +
   scale_y_log10() +
-  scale_x_date(breaks = "2 month", date_labels = "%y-%m") +
-  labs(fill = "IQR of output layer coefficients",
-       x = "Date",
-       y = "Output layer coefficients") +
-  theme(legend.position = "bottom")
-
-plot_reservoir_vs_input_importance <- ggpubr::ggarrange(plot_figure_performance_no_update + ggplot2::ggtitle("A"),
-                                                        plot_coef_input_vs_reservoir + ggplot2::ggtitle("B"),
-                                                        nrow = 2, ncol = 1,
-                                                        heights = c(0.65, 0.35))
-
-ggsave(here::here("results/final_figures/plot_reservoir_vs_input_importance.pdf"),
-       plot = plot_reservoir_vs_input_importance,
-       width = 5, height = 6)
-
-```
-
-# Number of parameters
-
-```{r}
-ls_importance <- list(RCGA = here::here("results/final_prediction/importance/GeneticSingleIs_GA_importance_combined.csv"),
-                      RCGAPCA = here::here("results/final_prediction/importance/GeneticSingleIs_GA_PCA_importance_combined.csv"),
-                      Enet = here::here("results/final_prediction/importance/enet_pred_RS_importance_combined.csv"),
-                      XGB = here::here("results/final_prediction/importance/xgb_pred_RS_importance_combined.csv"))
-
-df_nb_hp <- lapply(ls_importance,
-                   FUN = function(path_i){
-                     path_i %>%
-                       data.table::fread() %>%
-                       slice_max(hp_date) %>%
-                       slice_max(outcomeDate) %>%
-                       select(nb_param) %>%
-                       reframe(min(nb_param), max(nb_param))
-                   }) %>%
-  bind_rows(.id = "model")
-
-df_nb_hp %>%
-  # knitr::kable(format = "latex", booktabs = TRUE, digits = 2) %>%
-  knitr::kable(caption = "Number of parameters") %>%
-  kableExtra::kable_styling()
-```
-
-```{r}
-df_nb_features <- lapply(names(ls_importance),
-                         FUN = function(name_path_i){
-                           path_i <- ls_importance[[name_path_i]]
-                           df_i <- path_i %>%
-                             data.table::fread() %>%
-                             slice_min(hp_date)
-                           
-                           if(name_path_i == "Enet"){
-                             df_i2 <- df_i %>%
-                               filter(importance != 0)
-                           }
-                           if(name_path_i == "XGB"){
-                             df_i2 <- df_i
-                           }
-                           if(name_path_i %in% c("RCGA", "RCGAPCA")){
-                             df_i2 <- df_i %>%
-                               filter(!grepl(features, pattern = "reservoir"))
-                           }
-                           df_i2 %>%
-                             group_by(outcomeDate, trial) %>%
-                             summarise(nb_features = n(), .groups = "drop") %>%
-                             summarise(q25 = quantile(nb_features, .25),
-                                       q50 = quantile(nb_features, .5),
-                                       q75 = quantile(nb_features, .75)) %>%
-                             mutate(model = name_path_i, .before = 1) %>%
-                             return(.)
-                           
-                         }) %>%
-  bind_rows()
-
-df_nb_features %>%
-  knitr::kable(caption = "Number of features") %>%
-  kableExtra::kable_styling()
-```
-
-# Performance by date update
-
-## Confounding matrix
-
-```{r}
-#| label: performance-by-date-update
-#| fig-cap: "Performance by date update"
-
-date_breaks_period <- df_all_temp %>%
-  group_by(hp_date) %>%
-  summarise(min = min(outcomeDate)) %>%
-  pull(min) %>%
-  unique() %>%
-  as.Date()
-
-plot_perf_by_period <- df_all_temp %>%
-  ungroup() %>%
-  mutate(outcomeDate = as.Date(outcomeDate),
-         periods = cut.Date(x = outcomeDate, breaks = c(date_breaks_period, Inf)),
-         outcome = if_else(outcome < 10, 10, outcome),
-         pred = if_else(pred < 10, 10, pred),
-         hosp = if_else(hosp < 10, 10, hosp)) %>%
-  group_by(outcomeDate, model, hp_date, periods) %>%
-  summarise(outcome = unique(outcome),
-            hosp = unique(hosp),
-            pred = median(pred),
-            .groups = "drop") %>%
-  mutate(AE = abs(pred - outcome),
-         RE = AE/outcome,
-         baseline_AE = abs(hosp - outcome),
-         AE_baseline = AE - baseline_AE,
-         RE_baseline = AE/baseline_AE) %>%
-  group_by(model, hp_date, periods) %>%
-  summarise(MAE = mean(AE, na.rm = TRUE)) %>%
-  group_by(model, periods) %>%
-  mutate(scaled_MAE = scale(MAE),
-         scaled_MAE = if_else(is.na(scaled_MAE), 0, scaled_MAE)) %>%
-  filter(model %in% c("Reservoir FS (GA)")) %>%
-  mutate(hp_date = gsub(hp_date, pattern = "-15$", replacement = "-01"),
-         hp_date = gsub(hp_date, pattern = "-16$", replacement = "-02")) %>%
-  ggplot(mapping = aes(x = periods, y = hp_date, fill = scaled_MAE)) +
-  geom_tile() +
-  scale_fill_distiller(palette = "RdBu") +
-  facet_grid(model ~ .) +
+  labs(y = "Leaking rate sigma mutation",
+       x = "Frequency of feature selection",
+       fill = "Date update",
+       color = "Date update") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90)) +
-  labs(x = "Periods",
-       y = "Hyperparameter update date",
-       fill = "Scaled MAE")
-
-plot_perf_by_period
-
-ggsave(here::here("results/final_figures/plot_perf_by_period.pdf"),
-       plot = plot_perf_by_period,
-       width = 5, height = 4)
+  xlim(0,1)
 ```
 
-## Towards more agile update
-
-```{r}
-df_all_temp_daily_update <- df_all_temp %>%
-  filter(model == "Reservoir FS (GA)") %>%
-  mutate(outcomeDate = as.Date(outcomeDate),
-         outcome_bis = if_else(outcome < 10, 10, outcome),
-         pred_bis = if_else(pred < 10, 10, pred),
-         hosp_bis = if_else(hosp < 10, 10, hosp),
-         AE = abs(pred_bis - outcome_bis)) %>%
-  select(model, trial, hp_date, pred, outcome, hosp, AE, outcomeDate)
-
-vecAllDates <- as.Date(unique(df_all_temp_daily_update$outcomeDate))
-vec_anteriority <- c(0, 1, 3, 7, 14, 28, Inf)
-combinations <- expand.grid(anteriority = vec_anteriority, Date = vecAllDates)
-result_list <- split(combinations, 1:nrow(combinations))
-forecast_delay = 14
-
-df_res <- mclapply(result_list,
-                   mc.cores = detectCores()-2,
-                   function(vec_i){
-                     date_i_pred <- as.Date(vec_i$Date)
-                     anteriority_i <- vec_i$anteriority
-                     
-                     date_i_start <- date_i_pred-14
-                     
-                     nb_model_avail <- df_all_temp_daily_update %>%
-                       filter(outcomeDate == date_i_pred) %>%
-                       nrow()
-                     
-                     if(nb_model_avail == 40){
-                       best_previous2weeks <- df_all_temp_daily_update %>%
-                         filter(outcomeDate == date_i_pred) %>%
-                         ungroup()
-                       
-                     } else {
-                       best_previous2weeks <- df_all_temp_daily_update %>%
-                         filter(outcomeDate <= date_i_start,
-                                outcomeDate >= date_i_start-anteriority_i) %>%
-                         group_by(model, trial, hp_date) %>%
-                         summarise(MAE = mean(AE), .groups = "drop") %>%
-                         group_by(model) %>%
-                         slice_min(MAE, n = 40) %>%
-                         ungroup()
-                     }
-                     
-                     res <- best_previous2weeks %>%
-                       mutate(Anteriority = anteriority_i) %>%
-                       select(Anteriority, model, trial, hp_date) %>%
-                       left_join(df_all_temp_daily_update, by = c("model", "trial", "hp_date")) %>%
-                       filter(outcomeDate == (date_i_pred)) %>%
-                       return(res)
-                   }) %>%
-  bind_rows()
-
-```
-
-```{r}
-df_res %>%
-  group_by(outcomeDate, Anteriority) %>%
-  summarise(pred = median(pred),
-            outcome = unique(outcome),
-            .groups = "drop") %>%
-  mutate(outcome_bis = if_else(outcome < 10, 10, outcome),
-         pred_bis = if_else(pred < 10, 10, pred),
-         AE = abs(pred_bis - outcome_bis)) %>%
-  group_by(Anteriority) %>%
-  summarise(MAE = mean(AE, na.rm = TRUE)) %>%
-  knitr::kable(caption = "Performance while selecting best hp sets among all of the best hp sets of very month. Results depending on the evaluation period") %>%
-  kableExtra::kable_styling()
-```
-
-```{r}
-#| label: performance-agile-update
-#| fig-cap: "Forecast based on agile hp update where best hyperparameters from every 40 best reservoir depending on the evaluation period"
-
-df_pred_by_anteriority <- df_res %>%
-  group_by(outcomeDate, Anteriority) %>%
-  summarise(outcome = unique(outcome),
-            hosp = unique(hosp),
-            pred = median(pred),
-            .groups = "drop") %>%
-  mutate(outcomeDate = as.Date(outcomeDate)) %>%
-  tidyr::pivot_wider(names_from = Anteriority, values_from = pred) %>%
-  tidyr::pivot_longer(cols = -c(outcomeDate)) %>%
-  bind_rows(df_individual_model %>% filter(name == "Reservoir FS (GA)")) %>%
-  mutate(name = factor(name,
-                       levels = c("outcome",
-                                  "hosp",
-                                  "Reservoir FS (GA)",
-                                  vec_anteriority)),
-         name = forcats::fct_recode(name,
-                                    "Observed" = "outcome",
-                                    "Hosp t+14" = "hosp"))
-
-plot_anteriority <- df_pred_by_anteriority %>%
-  ggplot(mapping = aes(x = outcomeDate, y = value, color = name)) +
-  geom_line() +
-  scale_color_manual(values = c("black", "darkgrey", "#AE2012", viridis::mako(n = length(vec_anteriority)))) +
-  theme_minimal() +
-  theme(legend.position = "bottom") +
-  labs(x = "Date",
-       y = "Hospitalizations",
-       color = "") +
-  guides(color = guide_legend(ncol = 2))
-
-plot_anteriority
-```
