@@ -5,11 +5,57 @@ High dimension reservoir
 <link href="results_high_dim_rc_files/libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
 
 
-# Forecast
+# Introduction
 
-## Performance
+# Methods
+
+## Use case
+
+## Reservoir computing
+
+## Genetic algorithm
+
+## Experimental setup
+
+### Metaparameter exploration
+
+Choice of hyperparameters :
+
+sigma leaking rate : because depending on setting, convergence to
+different leaking rate seem to occur. Furthermore, low leaking rate
+seemed to achieve better performance
+
+pmutCat : because hyperparameter monthly update seem not to improve
+performance which is counterintuitive as important features should
+evolve in this context of non stationary time series.
+
+Grid :
+
+- sigma leaking rate = c(0.016, 0.04, 0.1, 0.25)
+- pmutCat = c(0.1, 0.2, 0.4, 0.8)
+
+# Results
+
+## Data presentation
+
+# Setting
+
+Figure above describes the evolution of 4 features (RT-PCR, positive
+RT-PCR, IPTCC and hospitalization) and of the outcome. We observe that
+the relationship between explanatory features and the outcome evolves
+over time making this problem complex.
+
+![Description of the outcome and 4 chosen
+features](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-2-1.png)
+
+## Forecast
 
 ### Sanity check
+
+First, we check that there is 40 reservoir prediction for each day of
+the prediction for each scenario. We observe that there is indeed a
+forecast for each day. Some days have less than 40 reservoirs but the
+minimum is 37 which seems acceptable.
 
 ![Number of reservoir per day for
 prediction](results_high_dim_rc_files/figure-commonmark/sanitycheck-1.png)
@@ -20,501 +66,303 @@ prediction](results_high_dim_rc_files/figure-commonmark/sanitycheck-1.png)
 <caption>Model performance</caption>
  <thead>
   <tr>
-   <th style="text-align:left;"> short_name_model </th>
-   <th style="text-align:right;"> pmutQuant </th>
    <th style="text-align:right;"> pmutCat </th>
    <th style="text-align:right;"> lr_sigma </th>
    <th style="text-align:left;"> update </th>
-   <th style="text-align:right;"> AE </th>
-   <th style="text-align:right;"> sd_AE </th>
-   <th style="text-align:right;"> AE_baseline </th>
-   <th style="text-align:right;"> sd_AE_baseline </th>
-   <th style="text-align:right;"> RE </th>
-   <th style="text-align:right;"> sd_RE </th>
-   <th style="text-align:right;"> RE_baseline </th>
-   <th style="text-align:right;"> sd_RE_baseline </th>
+   <th style="text-align:left;"> MAE </th>
+   <th style="text-align:left;"> MRE </th>
+   <th style="text-align:left;"> MAEB </th>
+   <th style="text-align:left;"> MREB </th>
   </tr>
  </thead>
 <tbody>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.93 </td>
-   <td style="text-align:right;"> 13.38 </td>
-   <td style="text-align:right;"> -2.65 </td>
-   <td style="text-align:right;"> 5.74 </td>
-   <td style="text-align:right;"> 0.28 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.90 </td>
-   <td style="text-align:right;"> 1.59 </td>
+   <td style="text-align:left;"> 15.93(\pm13.38) </td>
+   <td style="text-align:left;"> 0.28(\pm0.35) </td>
+   <td style="text-align:left;"> -2.65(\pm5.74) </td>
+   <td style="text-align:left;"> 0.9(\pm1.59) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.77 </td>
-   <td style="text-align:right;"> 13.14 </td>
-   <td style="text-align:right;"> -2.82 </td>
-   <td style="text-align:right;"> 5.05 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.87 </td>
-   <td style="text-align:right;"> 1.06 </td>
+   <td style="text-align:left;"> 15.77(\pm13.14) </td>
+   <td style="text-align:left;"> 0.27(\pm0.35) </td>
+   <td style="text-align:left;"> -2.82(\pm5.05) </td>
+   <td style="text-align:left;"> 0.87(\pm1.06) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.51 </td>
-   <td style="text-align:right;"> 12.87 </td>
-   <td style="text-align:right;"> -3.08 </td>
-   <td style="text-align:right;"> 5.82 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.88 </td>
-   <td style="text-align:right;"> 1.56 </td>
+   <td style="text-align:left;"> 15.51(\pm12.87) </td>
+   <td style="text-align:left;"> 0.27(\pm0.34) </td>
+   <td style="text-align:left;"> -3.08(\pm5.82) </td>
+   <td style="text-align:left;"> 0.88(\pm1.56) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.69 </td>
-   <td style="text-align:right;"> 12.54 </td>
-   <td style="text-align:right;"> -2.90 </td>
-   <td style="text-align:right;"> 5.79 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.33 </td>
-   <td style="text-align:right;"> 0.85 </td>
-   <td style="text-align:right;"> 1.52 </td>
+   <td style="text-align:left;"> 15.69(\pm12.54) </td>
+   <td style="text-align:left;"> 0.27(\pm0.33) </td>
+   <td style="text-align:left;"> -2.9(\pm5.79) </td>
+   <td style="text-align:left;"> 0.85(\pm1.52) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 14.89 </td>
-   <td style="text-align:right;"> 12.14 </td>
-   <td style="text-align:right;"> -3.70 </td>
-   <td style="text-align:right;"> 7.36 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.30 </td>
-   <td style="text-align:right;"> 0.84 </td>
-   <td style="text-align:right;"> 2.16 </td>
+   <td style="text-align:left;"> 14.89(\pm12.14) </td>
+   <td style="text-align:left;"> 0.26(\pm0.3) </td>
+   <td style="text-align:left;"> -3.7(\pm7.36) </td>
+   <td style="text-align:left;"> 0.84(\pm2.16) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.27 </td>
-   <td style="text-align:right;"> 13.11 </td>
-   <td style="text-align:right;"> -3.32 </td>
-   <td style="text-align:right;"> 5.80 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.88 </td>
-   <td style="text-align:right;"> 1.40 </td>
+   <td style="text-align:left;"> 15.27(\pm13.11) </td>
+   <td style="text-align:left;"> 0.26(\pm0.34) </td>
+   <td style="text-align:left;"> -3.32(\pm5.8) </td>
+   <td style="text-align:left;"> 0.88(\pm1.4) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.26 </td>
-   <td style="text-align:right;"> 12.94 </td>
-   <td style="text-align:right;"> -3.33 </td>
-   <td style="text-align:right;"> 7.88 </td>
-   <td style="text-align:right;"> 0.25 </td>
-   <td style="text-align:right;"> 0.31 </td>
-   <td style="text-align:right;"> 0.84 </td>
-   <td style="text-align:right;"> 1.83 </td>
+   <td style="text-align:left;"> 15.26(\pm12.94) </td>
+   <td style="text-align:left;"> 0.25(\pm0.31) </td>
+   <td style="text-align:left;"> -3.33(\pm7.88) </td>
+   <td style="text-align:left;"> 0.84(\pm1.83) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.016 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.02 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.24 </td>
-   <td style="text-align:right;"> 13.02 </td>
-   <td style="text-align:right;"> -3.34 </td>
-   <td style="text-align:right;"> 7.14 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.87 </td>
-   <td style="text-align:right;"> 1.79 </td>
+   <td style="text-align:left;"> 15.24(\pm13.02) </td>
+   <td style="text-align:left;"> 0.26(\pm0.34) </td>
+   <td style="text-align:left;"> -3.34(\pm7.14) </td>
+   <td style="text-align:left;"> 0.87(\pm1.79) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.82 </td>
-   <td style="text-align:right;"> 13.10 </td>
-   <td style="text-align:right;"> -2.76 </td>
-   <td style="text-align:right;"> 5.86 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.90 </td>
-   <td style="text-align:right;"> 1.13 </td>
+   <td style="text-align:left;"> 15.82(\pm13.1) </td>
+   <td style="text-align:left;"> 0.27(\pm0.35) </td>
+   <td style="text-align:left;"> -2.76(\pm5.86) </td>
+   <td style="text-align:left;"> 0.9(\pm1.13) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.96 </td>
-   <td style="text-align:right;"> 13.24 </td>
-   <td style="text-align:right;"> -2.63 </td>
-   <td style="text-align:right;"> 5.34 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.36 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.06 </td>
+   <td style="text-align:left;"> 15.96(\pm13.24) </td>
+   <td style="text-align:left;"> 0.27(\pm0.36) </td>
+   <td style="text-align:left;"> -2.63(\pm5.34) </td>
+   <td style="text-align:left;"> 0.89(\pm1.06) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.75 </td>
-   <td style="text-align:right;"> 12.97 </td>
-   <td style="text-align:right;"> -2.84 </td>
-   <td style="text-align:right;"> 5.67 </td>
-   <td style="text-align:right;"> 0.28 </td>
-   <td style="text-align:right;"> 0.36 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.61 </td>
+   <td style="text-align:left;"> 15.75(\pm12.97) </td>
+   <td style="text-align:left;"> 0.28(\pm0.36) </td>
+   <td style="text-align:left;"> -2.84(\pm5.67) </td>
+   <td style="text-align:left;"> 0.89(\pm1.61) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.67 </td>
-   <td style="text-align:right;"> 13.17 </td>
-   <td style="text-align:right;"> -2.91 </td>
-   <td style="text-align:right;"> 5.07 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.36 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.23 </td>
+   <td style="text-align:left;"> 15.67(\pm13.17) </td>
+   <td style="text-align:left;"> 0.26(\pm0.36) </td>
+   <td style="text-align:left;"> -2.91(\pm5.07) </td>
+   <td style="text-align:left;"> 0.89(\pm1.23) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.32 </td>
-   <td style="text-align:right;"> 12.73 </td>
-   <td style="text-align:right;"> -3.27 </td>
-   <td style="text-align:right;"> 6.50 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.32 </td>
-   <td style="text-align:right;"> 0.81 </td>
-   <td style="text-align:right;"> 1.65 </td>
+   <td style="text-align:left;"> 15.32(\pm12.73) </td>
+   <td style="text-align:left;"> 0.27(\pm0.32) </td>
+   <td style="text-align:left;"> -3.27(\pm6.5) </td>
+   <td style="text-align:left;"> 0.81(\pm1.65) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.14 </td>
-   <td style="text-align:right;"> 12.89 </td>
-   <td style="text-align:right;"> -3.45 </td>
-   <td style="text-align:right;"> 5.80 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.86 </td>
-   <td style="text-align:right;"> 1.55 </td>
+   <td style="text-align:left;"> 15.14(\pm12.89) </td>
+   <td style="text-align:left;"> 0.27(\pm0.34) </td>
+   <td style="text-align:left;"> -3.45(\pm5.8) </td>
+   <td style="text-align:left;"> 0.86(\pm1.55) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 14.99 </td>
-   <td style="text-align:right;"> 12.23 </td>
-   <td style="text-align:right;"> -3.60 </td>
-   <td style="text-align:right;"> 7.40 </td>
-   <td style="text-align:right;"> 0.25 </td>
-   <td style="text-align:right;"> 0.33 </td>
-   <td style="text-align:right;"> 0.82 </td>
-   <td style="text-align:right;"> 1.29 </td>
+   <td style="text-align:left;"> 14.99(\pm12.23) </td>
+   <td style="text-align:left;"> 0.25(\pm0.33) </td>
+   <td style="text-align:left;"> -3.6(\pm7.4) </td>
+   <td style="text-align:left;"> 0.82(\pm1.29) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.04 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.04 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.14 </td>
-   <td style="text-align:right;"> 12.75 </td>
-   <td style="text-align:right;"> -3.44 </td>
-   <td style="text-align:right;"> 6.18 </td>
-   <td style="text-align:right;"> 0.28 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.86 </td>
-   <td style="text-align:right;"> 1.68 </td>
+   <td style="text-align:left;"> 15.14(\pm12.75) </td>
+   <td style="text-align:left;"> 0.28(\pm0.34) </td>
+   <td style="text-align:left;"> -3.44(\pm6.18) </td>
+   <td style="text-align:left;"> 0.86(\pm1.68) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.45 </td>
-   <td style="text-align:right;"> 12.94 </td>
-   <td style="text-align:right;"> -3.13 </td>
-   <td style="text-align:right;"> 6.01 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.86 </td>
-   <td style="text-align:right;"> 1.62 </td>
+   <td style="text-align:left;"> 15.45(\pm12.94) </td>
+   <td style="text-align:left;"> 0.26(\pm0.35) </td>
+   <td style="text-align:left;"> -3.13(\pm6.01) </td>
+   <td style="text-align:left;"> 0.86(\pm1.62) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.76 </td>
-   <td style="text-align:right;"> 13.31 </td>
-   <td style="text-align:right;"> -2.82 </td>
-   <td style="text-align:right;"> 5.51 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.45 </td>
+   <td style="text-align:left;"> 15.76(\pm13.31) </td>
+   <td style="text-align:left;"> 0.27(\pm0.35) </td>
+   <td style="text-align:left;"> -2.82(\pm5.51) </td>
+   <td style="text-align:left;"> 0.89(\pm1.45) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.57 </td>
-   <td style="text-align:right;"> 13.06 </td>
-   <td style="text-align:right;"> -3.02 </td>
-   <td style="text-align:right;"> 6.21 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.13 </td>
+   <td style="text-align:left;"> 15.57(\pm13.06) </td>
+   <td style="text-align:left;"> 0.26(\pm0.35) </td>
+   <td style="text-align:left;"> -3.02(\pm6.21) </td>
+   <td style="text-align:left;"> 0.89(\pm1.13) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.66 </td>
-   <td style="text-align:right;"> 13.05 </td>
-   <td style="text-align:right;"> -2.93 </td>
-   <td style="text-align:right;"> 5.38 </td>
-   <td style="text-align:right;"> 0.28 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.67 </td>
+   <td style="text-align:left;"> 15.66(\pm13.05) </td>
+   <td style="text-align:left;"> 0.28(\pm0.34) </td>
+   <td style="text-align:left;"> -2.93(\pm5.38) </td>
+   <td style="text-align:left;"> 0.89(\pm1.67) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.62 </td>
-   <td style="text-align:right;"> 12.69 </td>
-   <td style="text-align:right;"> -2.97 </td>
-   <td style="text-align:right;"> 5.84 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.87 </td>
-   <td style="text-align:right;"> 1.56 </td>
+   <td style="text-align:left;"> 15.62(\pm12.69) </td>
+   <td style="text-align:left;"> 0.27(\pm0.34) </td>
+   <td style="text-align:left;"> -2.97(\pm5.84) </td>
+   <td style="text-align:left;"> 0.87(\pm1.56) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.60 </td>
-   <td style="text-align:right;"> 13.20 </td>
-   <td style="text-align:right;"> -2.99 </td>
-   <td style="text-align:right;"> 5.50 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.88 </td>
-   <td style="text-align:right;"> 1.36 </td>
+   <td style="text-align:left;"> 15.6(\pm13.2) </td>
+   <td style="text-align:left;"> 0.27(\pm0.35) </td>
+   <td style="text-align:left;"> -2.99(\pm5.5) </td>
+   <td style="text-align:left;"> 0.88(\pm1.36) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 14.94 </td>
-   <td style="text-align:right;"> 12.43 </td>
-   <td style="text-align:right;"> -3.65 </td>
-   <td style="text-align:right;"> 6.71 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.33 </td>
-   <td style="text-align:right;"> 0.82 </td>
-   <td style="text-align:right;"> 1.64 </td>
+   <td style="text-align:left;"> 14.94(\pm12.43) </td>
+   <td style="text-align:left;"> 0.26(\pm0.33) </td>
+   <td style="text-align:left;"> -3.65(\pm6.71) </td>
+   <td style="text-align:left;"> 0.82(\pm1.64) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.1 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.10 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.69 </td>
-   <td style="text-align:right;"> 12.99 </td>
-   <td style="text-align:right;"> -2.90 </td>
-   <td style="text-align:right;"> 5.41 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.89 </td>
-   <td style="text-align:right;"> 1.37 </td>
+   <td style="text-align:left;"> 15.69(\pm12.99) </td>
+   <td style="text-align:left;"> 0.27(\pm0.35) </td>
+   <td style="text-align:left;"> -2.9(\pm5.41) </td>
+   <td style="text-align:left;"> 0.89(\pm1.37) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.14 </td>
-   <td style="text-align:right;"> 12.80 </td>
-   <td style="text-align:right;"> -3.45 </td>
-   <td style="text-align:right;"> 6.33 </td>
-   <td style="text-align:right;"> 0.28 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.85 </td>
-   <td style="text-align:right;"> 1.71 </td>
+   <td style="text-align:left;"> 15.14(\pm12.8) </td>
+   <td style="text-align:left;"> 0.28(\pm0.34) </td>
+   <td style="text-align:left;"> -3.45(\pm6.33) </td>
+   <td style="text-align:left;"> 0.85(\pm1.71) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.1 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.1 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 14.85 </td>
-   <td style="text-align:right;"> 12.67 </td>
-   <td style="text-align:right;"> -3.73 </td>
-   <td style="text-align:right;"> 5.97 </td>
-   <td style="text-align:right;"> 0.25 </td>
-   <td style="text-align:right;"> 0.33 </td>
-   <td style="text-align:right;"> 0.84 </td>
-   <td style="text-align:right;"> 1.17 </td>
+   <td style="text-align:left;"> 14.85(\pm12.67) </td>
+   <td style="text-align:left;"> 0.25(\pm0.33) </td>
+   <td style="text-align:left;"> -3.73(\pm5.97) </td>
+   <td style="text-align:left;"> 0.84(\pm1.17) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.58 </td>
-   <td style="text-align:right;"> 13.11 </td>
-   <td style="text-align:right;"> -3.01 </td>
-   <td style="text-align:right;"> 6.00 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.86 </td>
-   <td style="text-align:right;"> 1.59 </td>
+   <td style="text-align:left;"> 15.58(\pm13.11) </td>
+   <td style="text-align:left;"> 0.26(\pm0.34) </td>
+   <td style="text-align:left;"> -3.01(\pm6) </td>
+   <td style="text-align:left;"> 0.86(\pm1.59) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.2 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.2 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.16 </td>
-   <td style="text-align:right;"> 12.69 </td>
-   <td style="text-align:right;"> -3.42 </td>
-   <td style="text-align:right;"> 5.90 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.33 </td>
-   <td style="text-align:right;"> 0.85 </td>
-   <td style="text-align:right;"> 1.34 </td>
+   <td style="text-align:left;"> 15.16(\pm12.69) </td>
+   <td style="text-align:left;"> 0.27(\pm0.33) </td>
+   <td style="text-align:left;"> -3.42(\pm5.9) </td>
+   <td style="text-align:left;"> 0.85(\pm1.34) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.20 </td>
-   <td style="text-align:right;"> 12.85 </td>
-   <td style="text-align:right;"> -3.39 </td>
-   <td style="text-align:right;"> 7.27 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.84 </td>
-   <td style="text-align:right;"> 1.44 </td>
+   <td style="text-align:left;"> 15.2(\pm12.85) </td>
+   <td style="text-align:left;"> 0.27(\pm0.34) </td>
+   <td style="text-align:left;"> -3.39(\pm7.27) </td>
+   <td style="text-align:left;"> 0.84(\pm1.44) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.4 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.4 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.21 </td>
-   <td style="text-align:right;"> 13.21 </td>
-   <td style="text-align:right;"> -3.37 </td>
-   <td style="text-align:right;"> 5.68 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.33 </td>
-   <td style="text-align:right;"> 0.86 </td>
-   <td style="text-align:right;"> 1.44 </td>
+   <td style="text-align:left;"> 15.21(\pm13.21) </td>
+   <td style="text-align:left;"> 0.27(\pm0.33) </td>
+   <td style="text-align:left;"> -3.37(\pm5.68) </td>
+   <td style="text-align:left;"> 0.86(\pm1.44) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> No monthly update </td>
-   <td style="text-align:right;"> 15.45 </td>
-   <td style="text-align:right;"> 13.07 </td>
-   <td style="text-align:right;"> -3.14 </td>
-   <td style="text-align:right;"> 6.32 </td>
-   <td style="text-align:right;"> 0.26 </td>
-   <td style="text-align:right;"> 0.35 </td>
-   <td style="text-align:right;"> 0.85 </td>
-   <td style="text-align:right;"> 1.12 </td>
+   <td style="text-align:left;"> 15.45(\pm13.07) </td>
+   <td style="text-align:left;"> 0.26(\pm0.35) </td>
+   <td style="text-align:left;"> -3.14(\pm6.32) </td>
+   <td style="text-align:left;"> 0.85(\pm1.12) </td>
   </tr>
   <tr>
-   <td style="text-align:left;"> PmutQuant = 0.5 ; PmutCat = 0.25 ; lr sigma = 0.8 </td>
-   <td style="text-align:right;"> 0.5 </td>
    <td style="text-align:right;"> 0.25 </td>
    <td style="text-align:right;"> 0.8 </td>
    <td style="text-align:left;"> Monthly update </td>
-   <td style="text-align:right;"> 15.50 </td>
-   <td style="text-align:right;"> 13.00 </td>
-   <td style="text-align:right;"> -3.09 </td>
-   <td style="text-align:right;"> 5.34 </td>
-   <td style="text-align:right;"> 0.27 </td>
-   <td style="text-align:right;"> 0.34 </td>
-   <td style="text-align:right;"> 0.86 </td>
-   <td style="text-align:right;"> 1.19 </td>
+   <td style="text-align:left;"> 15.5(\pm13) </td>
+   <td style="text-align:left;"> 0.27(\pm0.34) </td>
+   <td style="text-align:left;"> -3.09(\pm5.34) </td>
+   <td style="text-align:left;"> 0.86(\pm1.19) </td>
   </tr>
 </tbody>
 </table>
@@ -529,49 +377,18 @@ prediction](results_high_dim_rc_files/figure-commonmark/sanitycheck-1.png)
 
 ![Sanity check leaking rate, variance of leaking rate of genetic
 individuals should increase with leaking rate mutation
-sigma](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-5-1.png)
+sigma](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-6-1.png)
 
-![Numeric hyperparameter, density of all genetic
-individuals.](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-6-1.png)
+![Performance on the train
+set](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-7-1.png)
 
 ![Numeric hyperparameter, density of 40 best genetic individuals per
 hyperparameter update
-date.](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-7-1.png)
+date.](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-8-1.png)
 
 ## Categorical hyperparameters
 
 ![Number of selected features among the best genetic
 individuals.](results_high_dim_rc_files/figure-commonmark/unnamed-chunk-9-1.png)
-
-<!-- ```{r factorialanalysis} -->
-<!-- # Loading data -->
-<!-- library(FactoMineR) -->
-<!-- res.mca <- df_all_hp_best40_qual |>  -->
-<!--   filter(last_used_observation == "2021-03-01") |>  -->
-<!--   select(pmutCat, lr_sigma, ends_with("_bin")) |>  -->
-<!--   mutate(across(.cols = c(pmutCat, lr_sigma), .fns = as.factor)) |>  -->
-<!--   MCA(ncp = 200, -->
-<!--       quali.sup = c("pmutCat", "lr_sigma"), -->
-<!--       graph=FALSE) -->
-<!-- res.hcpc <- HCPC(res.mca, graph = FALSE, nb.clust = -1, max = 100, min = 2) -->
-<!-- res.hcpc$desc.ind -->
-<!-- ``` -->
-<!-- ```{r} -->
-<!-- library(umap) -->
-<!-- df_freq_selection <- df_all_hp_best40_qual |>  -->
-<!--   tidyr::pivot_longer(cols = ends_with("_bin")) |>  -->
-<!--   group_by(short_name_model,  pmutCat, lr_sigma, last_used_observation, name) |>  -->
-<!--   summarise(value = mean(value == "y"), .groups = "drop") |>  -->
-<!--   tidyr::pivot_wider() -->
-<!-- umap_test <- umap(df_freq_selection |>  -->
-<!--   select(ends_with("_bin"))) -->
-<!-- umap_test$layout |>  -->
-<!--   as.data.frame() |>  -->
-<!--   bind_cols(df_freq_selection) |>  -->
-<!--   mutate(pmutCat = as.factor(pmutCat), -->
-<!--          lr_sigma = as.factor(lr_sigma)) |>  -->
-<!--   ggplot(mapping = aes(x = V1, y = V2, color = lr_sigma, shape = pmutCat)) + -->
-<!--   geom_point() -->
-<!-- ``` -->
 
 ![](results_high_dim_rc_files/figure-commonmark/freqselectionfeatures-1.png)
