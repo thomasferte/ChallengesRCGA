@@ -13,6 +13,7 @@ prefer-html: true
 library(dplyr)
 library(parallel)
 library(ggplot2)
+library(cowplot)
 source(file = here::here("script/FctCleanFeaturesName.R"))
 set.seed(1)
 ```
@@ -167,15 +168,36 @@ df_perf %>%
   mutate(update = update,
          pmutCat = pmutCat,
          lr_sigma = lr_sigma,
-         MAE = paste0(AE, "(\\pm", sd_AE, ")"),
-         MRE = paste0(RE, "(\\pm", sd_RE, ")"),
-         MAEB = paste0(AE_baseline, "(\\pm", sd_AE_baseline, ")"),
-         MREB = paste0(RE_baseline, "(\\pm", sd_RE_baseline, ")"),
+         MAE = paste0(AE, "(\u00B1", sd_AE, ")"),
+         MRE = paste0(RE, "(\u00B1", sd_RE, ")"),
+         MAEB = paste0(AE_baseline, "(\u00B1", sd_AE_baseline, ")"),
+         MREB = paste0(RE_baseline, "(\u00B1", sd_RE_baseline, ")"),
          .keep = "none") |> 
   # knitr::kable(format = "latex", booktabs = TRUE)
   knitr::kable(digits = 2,
                caption = "Model performance") %>%
   kableExtra::kable_styling()
+
+# df_perf %>%
+#   mutate(across(c("AE", "RE", "AE_baseline", "RE_baseline", starts_with("sd_")),
+#                 ~ round(.x, 2))) |> 
+#   mutate(update = update,
+#          pmutCat = pmutCat,
+#          lr_sigma = lr_sigma,
+#          MAE = paste0(AE, "(\u00B1", sd_AE, ")"),
+#          MRE = paste0(RE, "(\u00B1", sd_RE, ")"),
+#          .keep = "none") |> 
+#   tidyr::pivot_wider(names_from = update,
+#                      values_from = c("MAE", "MRE")) |> 
+#   janitor::clean_names() |> 
+#   select(pmut_cat, lr_sigma,
+#          mae_no_monthly_update, mre_no_monthly_update,
+#          mae_monthly_update, mre_monthly_update) |> 
+#   knitr::kable(format = "latex", booktabs = TRUE) |> 
+#   knitr::kable(digits = 2,
+#                caption = "Model performance") %>%
+#   kableExtra::kable_styling()
+
 
 ```
 
@@ -210,7 +232,7 @@ graph_perf <- df_perf |>
        color = "P(mutation categorical genes)")
 
 graph_perf
-ggsave(filename = here::here("figures/graph_perf.pdf"), height = 4, width = 6)
+ggsave(filename = here::here("figures/graph_perf.pdf"), height = 3, width = 10)
 ```
 
 # Hyperparameters
@@ -261,6 +283,8 @@ df_all_hp_best40 <- df_all_hp %>%
 
 ## Numeric hyperparameters
 
+### Sanity check
+
 ```{r fig.height=5, fig.cap="Sanity check leaking rate, variance of leaking rate of genetic individuals should increase with leaking rate mutation sigma"}
 plot_sanity_numeric_hp <- df_all_hp |> 
   group_by(pmutCat, lr_sigma, last_used_observation) |> 
@@ -277,7 +301,7 @@ plot_sanity_numeric_hp <- df_all_hp |>
 plot_sanity_numeric_hp
 ```
 
-
+### Performance on train set
 
 ```{r fig.height=10, fig.width=6, fig.cap="Performance on the train set"}
 plot_best_numeric_hp_values_bylr_sigma <- df_all_hp_best40 |> 
@@ -331,9 +355,44 @@ plot_best_numeric_hp_values.pdf
 
 ggsave(plot = plot_best_numeric_hp_values.pdf,
        filename = here::here("figures/plot_best_numeric_hp_values.pdf"),
-       height = 6, width = 8)
+       height = 5, width = 10)
 ```
 
+```{r}
+graph_perf
+plot_best_numeric_hp_values.pdf <- ggpubr::ggarrange(plot_best_numeric_hp_values_bylr_sigma, plot_best_numeric_hp_values_bypmutcat)
+
+plot_perf_train_and_test <- ggdraw() +
+  draw_plot(plot_best_numeric_hp_values_bylr_sigma +
+              scale_x_discrete(breaks = c("2021-03-01",
+                                          "2021-05-02",
+                                          "2021-07-01",
+                                          "2021-09-01",
+                                          "2021-11-02",
+                                          "2022-01-01")),
+            x = 0, y = .35, width = .5, height = .65) +
+  draw_plot(plot_best_numeric_hp_values_bypmutcat +
+              scale_x_discrete(breaks = c("2021-03-01",
+                                          "2021-05-02",
+                                          "2021-07-01",
+                                          "2021-09-01",
+                                          "2021-11-02",
+                                          "2022-01-01")),
+            x = .5, y = .35, width = .5, height = .65) +
+  draw_plot(graph_perf, x = 0, y = 0, width = 1, height = .35) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, .5, 0), y = c(1, 1, .4))
+
+plot_perf_train_and_test
+
+ggsave(plot = plot_perf_train_and_test,
+       filename = here::here("figures/plot_perf_train_and_test.pdf"),
+       height = 12, width = 8, useDingbats = TRUE)
+
+```
+
+
+### Hyperparameter evolution
 
 ```{r fig.height=8, fig.cap="Numeric hyperparameter, density of 40 best genetic individuals per hyperparameter update date."}
 plot_best_numeric_hp <- df_all_hp_best40 |> 
@@ -364,6 +423,246 @@ ggsave(plot_best_numeric_hp, file = here::here("figures/plot_best_numeric_hp.pdf
        height = 8,
        useDingbats = TRUE)
 ```
+
+```{r}
+df_all_hp_best40 |> 
+  select(pmutCat, lr_sigma, last_used_observation, all_of(numeric_hp)) |> 
+  tidyr::pivot_longer(cols = numeric_hp, names_to = "hyperparameter") |> 
+  mutate(pmutCat = as.factor(pmutCat),
+         lr_sigma = as.factor(lr_sigma),
+         pmutCat = forcats::fct_rev(pmutCat),
+         last_used_observation = as.factor(last_used_observation),
+         last_used_observation = forcats::fct_rev(last_used_observation)) |> 
+  ggplot(mapping = aes(y = value,
+                       x = lr_sigma,
+                       color = pmutCat)) +
+  geom_point(position = ggplot2::position_jitterdodge(dodge.width = 0.7, jitter.width = 0.2)) +
+  # scale_x_log10() +
+  scale_y_log10() +
+  facet_wrap(hyperparameter ~ ., scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+```{r fig.height=6, fig.cap="Two by two hyperparameter dependency."}
+# ls_plots <- list(c("leaking_rate", "spectral_radius"),
+#                  c("leaking_rate", "ridge"),
+#                  c("leaking_rate", "input_scaling"),
+#                  c("spectral_radius", "ridge"),
+#                  c("spectral_radius", "input_scaling"),
+#                  c("ridge", "input_scaling"))
+# 
+# ls_plot_22 <- lapply(ls_plots,
+#        FUN = function(vec_coord){
+#          plot_i <- ggplot(df_all_hp_best40,
+#                           mapping = aes(x = .data[[vec_coord[1]]], y= .data[[vec_coord[2]]],
+#                                         color = leaking_rate)) +
+#            geom_point(alpha = .25) +
+#            scale_x_log10(breaks = c(1e-4, 1e-2, 1, 1e2, 1e4, 1e6),
+#                          labels = function(x) format(x, scientific = TRUE)) +
+#            scale_y_log10(breaks = c(1e-4, 1e-2, 1, 1e2, 1e4, 1e6),
+#                          labels = function(x) format(x, scientific = TRUE)) +
+#            scale_color_gradient(low = "red",
+#                                 high = "#2A9D8F",
+#                                 trans = "log",
+#                                 breaks = c(1, 5*1e-3, 1e-5)) +
+#            theme_minimal()
+#          return(plot_i)
+#        })
+# 
+# plot_22 <- ggpubr::ggarrange(plotlist = ls_plot_22, common.legend = TRUE)
+
+
+plot_22 <- df_all_hp_best40 |> 
+  select(all_of(numeric_hp)) |> 
+  tidyr::pivot_longer(cols = c("ridge", "input_scaling", "spectral_radius")) |> 
+  ggplot(mapping = aes(x = leaking_rate, y= value,
+                       color = leaking_rate)) +
+  geom_point(alpha = .25) +
+  scale_x_log10(breaks = c(1e-4, 1e-2, 1, 1e2, 1e4, 1e6),
+                labels = function(x) format(x, scientific = TRUE)) +
+  scale_y_log10(labels = function(x) format(x, scientific = TRUE)) +
+  scale_color_gradient(low = "red",
+                       high = "#2A9D8F",
+                       trans = "log",
+                       breaks = c(1, 5*1e-3, 1e-5)) +
+  facet_grid(name ~ ., scales = "free_y") +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  labs(y = "Hyperparameter value")
+
+plot_22
+ggsave(plot_22, file = here::here("figures/plot_22.pdf"),
+       width = 3,
+       height = 4,
+       useDingbats = TRUE)
+```
+
+### Leaking rate influence
+
+```{r}
+plot_lr_influence_train_set <- df_all_hp_best40 |> 
+ mutate(lr_inf_2 = if_else(leaking_rate < 1e-2,
+                            "leaking_rate < 1e-2",
+                            "leaking_rate >= 1e-2"),
+        file_hp = as.factor(file_hp),
+        file_hp = forcats::fct_rev(file_hp)) |> 
+  ggplot(mapping = aes(x = value, color = lr_inf_2, fill = lr_inf_2, y = file_hp)) +
+  ggridges::geom_density_ridges(alpha = 0.5) +
+  scale_color_manual(values = c("red", "#2A9D8F")) +
+  scale_fill_manual(values = c("red", "#2A9D8F")) +
+  theme_minimal() +
+  labs(color = "", fill = "",
+       x = "MAE on train set",
+       y = "Update date") +
+  theme(legend.position = "bottom")
+
+plot_lr_influence_train_set
+ggsave(plot_lr_influence_train_set, file = here::here("figures/plot_lr_influence_train_set.pdf"),
+       width = 4.5,
+       height = 3.5,
+       useDingbats = TRUE)
+```
+
+
+```{r}
+df_lr <- df_all_hp |> 
+  select(job_id, file_hp, leaking_rate) |> 
+  distinct() |> 
+  mutate(trial = paste0("trial_", job_id, "_train365"),
+         hp_date = as.character(as.Date(file_hp) + 14),
+         .keep = "unused")
+
+df_all_lr <- df_all |> 
+  left_join(df_lr,
+            by = c("trial", "hp_date")) |> 
+  select(trial, hp_date, leaking_rate, outcomeDate, short_name_model, pmutQuant, pmutCat, lr_sigma, update, pred, outcome, hosp) |> 
+  mutate(lr_inf_2 = if_else(leaking_rate < 1e-2,
+                            "leaking_rate < 1e-2",
+                            "leaking_rate >= 1e-2"),
+         outcomeDateYM = format(outcomeDate, "%Y-%m"))
+```
+
+
+```{r}
+df_perf_lr <- df_all_lr %>%
+  mutate(outcome = if_else(outcome < 10, 10, outcome),
+         pred = if_else(pred < 10, 10, pred),
+         hosp = if_else(hosp < 10, 10, hosp)) %>%
+  group_by(lr_inf_2, outcomeDate, update) %>%
+  summarise(outcome = unique(outcome),
+            hosp = unique(hosp),
+            pred = median(pred),
+            .groups = "drop") %>%
+  mutate(AE = abs(pred - outcome),
+         RE = AE/outcome,
+         baseline_AE = abs(hosp - outcome),
+         AE_baseline = AE - baseline_AE,
+         RE_baseline = AE/baseline_AE) %>%
+  group_by(lr_inf_2, update) %>%
+  summarise(sd_AE = sd(AE, na.rm = T),
+            AE = mean(AE, na.rm = T),
+            sd_AE_baseline = sd(AE_baseline, na.rm = T),
+            AE_baseline = mean(AE_baseline, na.rm = T),
+            sd_RE = sd(RE, na.rm = TRUE),
+            RE = median(RE, na.rm = TRUE),
+            sd_RE_baseline = sd(RE_baseline, na.rm = TRUE),
+            RE_baseline = median(RE_baseline, na.rm = TRUE),
+            .groups = "drop") %>%
+  select(lr_inf_2, update, AE, sd_AE, AE_baseline, sd_AE_baseline, RE, sd_RE, RE_baseline, sd_RE_baseline)
+
+df_perf_lr %>%
+  mutate(across(c("AE", "RE", "AE_baseline", "RE_baseline", starts_with("sd_")),
+                ~ round(.x, 2))) |> 
+  mutate(lr_inf_2 = lr_inf_2,
+         update = update,
+         MAE = paste0(AE, "(\u00B1", sd_AE, ")"),
+         MRE = paste0(RE, "(\u00B1", sd_RE, ")"),
+         MAEB = paste0(AE_baseline, "(\u00B1", sd_AE_baseline, ")"),
+         MREB = paste0(RE_baseline, "(\u00B1", sd_RE_baseline, ")"),
+         .keep = "none") |> 
+  # knitr::kable(format = "latex", booktabs = TRUE)
+  knitr::kable(digits = 2,
+               caption = "Model performance") %>%
+  kableExtra::kable_styling()
+```
+
+```{r}
+df_perf_lr_by_month <- df_all_lr %>%
+  mutate(outcome = if_else(outcome < 10, 10, outcome),
+         pred = if_else(pred < 10, 10, pred),
+         hosp = if_else(hosp < 10, 10, hosp)) %>%
+  group_by(lr_inf_2, outcomeDate, outcomeDateYM, update) %>%
+  summarise(outcome = unique(outcome),
+            hosp = unique(hosp),
+            pred = median(pred),
+            .groups = "drop") %>%
+  mutate(AE = abs(pred - outcome),
+         RE = AE/outcome,
+         baseline_AE = abs(hosp - outcome),
+         AE_baseline = AE - baseline_AE,
+         RE_baseline = AE/baseline_AE) %>%
+  group_by(outcomeDateYM, lr_inf_2, update) %>%
+  summarise(sd_AE = sd(AE, na.rm = T),
+            AE = mean(AE, na.rm = T),
+            sd_AE_baseline = sd(AE_baseline, na.rm = T),
+            AE_baseline = mean(AE_baseline, na.rm = T),
+            sd_RE = sd(RE, na.rm = TRUE),
+            RE = median(RE, na.rm = TRUE),
+            sd_RE_baseline = sd(RE_baseline, na.rm = TRUE),
+            RE_baseline = median(RE_baseline, na.rm = TRUE),
+            .groups = "drop") %>%
+  select(outcomeDateYM, lr_inf_2, update, AE, sd_AE, AE_baseline, sd_AE_baseline, RE, sd_RE, RE_baseline, sd_RE_baseline)
+
+plot_lr_influence_test_set <- ggplot(df_perf_lr_by_month, mapping = aes(x = outcomeDateYM, y = AE,
+                                                                        color = lr_inf_2, group = interaction(lr_inf_2, update),
+                                                                        linetype = update,
+                                                                        shape = update)) +
+  geom_point() +
+  geom_line() +
+  scale_color_manual(values = c("red", "#2A9D8F")) +
+  labs(x = "Date",
+       y = "MAE on test set",
+       color = "",
+       linetype = "",
+       shape = "") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "bottom",
+        legend.box="vertical", legend.margin=margin())
+
+plot_lr_influence_test_set
+ggsave(plot_lr_influence_test_set, file = here::here("figures/plot_lr_influence_test_set.pdf"),
+       width = 4.5,
+       height = 3.5,
+       useDingbats = TRUE)
+```
+
+```{r fig.height=6, fig.cap="Leaking rate bimodal influence."}
+plot_influence_lr <- ggdraw() +
+  draw_plot(plot_22, x = 0, y = 0, width = .3, height = 1) +
+  draw_plot(plot_lr_influence_train_set, x = .35, y = .5, width = .6, height = .5) +
+  draw_plot(plot_lr_influence_test_set, x = .35, y = 0, width = .6, height = .5) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, .3, .3), y = c(1, 1, .5))
+
+plot_influence_lr <- ggdraw() +
+  draw_plot(plot_22, x = 0, y = 0, width = .33, height = 1) +
+  draw_plot(plot_lr_influence_train_set + guides(fill=guide_legend(nrow=2),
+                                                 color=guide_legend(nrow=2)), x = .33, y = 0, width = .33, height = 1) +
+  draw_plot(plot_lr_influence_test_set + guides(linetype=guide_legend(nrow=2),
+                                                shape=guide_legend(nrow=2),
+                                                color=guide_legend(nrow=2)), x = .66, y = 0, width = .33, height = 1) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, .33, .66), y = c(1, 1, 1))
+
+plot_influence_lr
+
+ggsave(plot = plot_influence_lr,
+       filename = here::here("figures/plot_influence_lr.pdf"),
+       height = 4, width = 7, useDingbats = TRUE)
+```
+
 
 ## Categorical hyperparameters
 
@@ -444,4 +743,26 @@ ggsave(plot_distribution_feature_selection,
        width = 8)
 ```
 
+
+```{r}
+plot_cat_features <- ggdraw() +
+  draw_plot(plot_best_numeric_hp +
+              theme(legend.position = "right"),
+            x = 0, y = .45, width = 1, height = .55) +
+  draw_plot(plot_nb_features + theme(legend.position = "bottom") +
+              guides(color = guide_legend(ncol = 1)),
+            x = 0, y = 0, width = .4, height = .45) +
+  draw_plot(plot_distribution_feature_selection +
+              theme(legend.position = "bottom") +
+              guides(fill = guide_legend(ncol = 2)),
+            x = .4, y = 0, width = .6, height = .45) +
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, 0, .4), y = c(1, .45, .45))
+
+plot_cat_features
+
+ggsave(plot = plot_cat_features,
+       filename = here::here("figures/plot_cat_features.pdf"),
+       height = 12, width = 8, useDingbats = TRUE)
+```
 
