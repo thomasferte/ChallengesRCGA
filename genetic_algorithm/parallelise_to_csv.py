@@ -413,6 +413,7 @@ def csv_sampler(path_file, data_path, output_path, scenari, array_id = 1, Npop =
         delta = job_end - job_start
         ### save results
         # prepare df to save
+        params['nbFeaturesSelected'] = sum(1 for key, value in params.items() if key.endswith('_bin') and value == 'y')
         params['value'] = value
         params['job_id'] = job_id
         params['time_seconds'] = delta.total_seconds()

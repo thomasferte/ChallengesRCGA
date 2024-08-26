@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 class CsvGeneticAlgorithm(object):
-    def __init__(self, hp_df, perf_df, Npop = 200, Ne = 100, Ntournament = 2, pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 1/10):
+    def __init__(self, hp_df, perf_df, Npop = 200, Ne = 100, Ntournament = 2, pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 1/10, NbFeaturesPenalty = 0, TournamentFeaturesPenalty = False):
         self._rng = np.random.RandomState()
         self._current_trial = None  # Current state.
         # add genetic algorithm hyperparam
@@ -18,6 +18,8 @@ class CsvGeneticAlgorithm(object):
         self.sigma = sigma
         self.sigma_halv_thresh = sigma_halv_thresh
         self.sigmahalv = sigmahalv
+        self.NbFeaturesPenalty = NbFeaturesPenalty
+        self.TournamentFeaturesPenalty = TournamentFeaturesPenalty
 
     # Keep top Npop best finished trials
     def keepBestNPopTrials(self):
@@ -29,8 +31,10 @@ class CsvGeneticAlgorithm(object):
       # Sample only from population, remove children
       if(NbChildAlreadyCompleted != 0):
           listOfCompletedTrials = listOfCompletedTrials[:-NbChildAlreadyCompleted]
+      # Compute the new value column
+      listOfCompletedTrials['penalized_value'] = listOfCompletedTrials['value'] + self.NbFeaturesPenalty*listOfCompletedTrials['nbFeaturesSelected']
       # Get best individuals from population
-      top_Npop = listOfCompletedTrials.sort_values(by = "value", ascending = True).head(self.Npop)
+      top_Npop = listOfCompletedTrials.sort_values(by = "penalized_value", ascending = True).head(self.Npop)
       return top_Npop
       
     ## 1 parent selection by tournament
@@ -39,26 +43,16 @@ class CsvGeneticAlgorithm(object):
       # Select challengers from completed trials
       listOfCompletedTrials = self.keepBestNPopTrials()
 
-      # Initialise storage
-      results = [] # initialize an empty list to store the results
-      min_value_index = None
-      min_value = float('inf')  # initialize to infinity
+      random_rows = listOfCompletedTrials.sample(n=self.Ntournament)
       
-      # select each challenger from the last Npop completed trials
-      # store the best challenger (min_value_index)
-      for i in range(self.Ntournament):
-          indice_i = round((self.Npop-1) * np.random.rand())
-          value_i = listOfCompletedTrials.iloc[indice_i]["value"]
-          value_i = float(value_i)
-          results.append((indice_i, value_i))
-          print("value_i = " + str(value_i) + str(type(value_i)))
-          print("min_value = " + str(min_value) + str(type(value_i)))
-          if value_i < min_value:
-              min_value = value_i
-              min_value_index = indice_i
+      if self.TournamentFeaturesPenalty :
+          # remove worse performing
+          row_to_remove_worse = random_rows['nbFeaturesSelected'].idxmax()
+          random_rows = random_rows.drop(row_to_remove_worse)
       
-      # return the best challenger
-      return listOfCompletedTrials.iloc[min_value_index]
+      row_to_keep = random_rows['penalized_value'].idxmin()
+      
+      return random_rows.loc[row_to_keep]
 
     ## 2 parents selection by tournament
     def selection(self):
@@ -177,30 +171,3 @@ class CsvGeneticAlgorithm(object):
         
         # 4. Return new children parameters
         return params
-
-# # ### example
-# def funsquared(x,y):
-#     return x**2 + y**2
-#     
-# def objective(trial):
-#     x = trial.suggest_float("x", -10, 10)
-#     y = trial.suggest_int("y", -5, 5)
-#     a = trial.suggest_categorical("cat", ["A", "B", "C"])
-# 
-#     fct_value = funsquared(x,y)
-# 
-#     if(a == "A"):
-#       fct_value = fct_value - 5
-# 
-#     return fct_value
-# 
-# sampler = CustomGeneticAlgorithm(Npop = 10)
-# study = optuna.create_study(study_name='example-study',
-#                             storage = 'sqlite:///example.db',
-#                             load_if_exists = True,
-#                             sampler=sampler, direction='minimize')
-# study.optimize(objective, n_trials=100)
-# 
-# optuna.visualization.matplotlib.plot_optimization_history(study)
-# plt.show()
-# study.best_params
