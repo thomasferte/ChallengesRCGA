@@ -40,7 +40,7 @@ def TestAlgorithm_for_csv(
     -------
     None
     """
-    if "epidemio" in study_path :
+    if "epidemio" in scenari :
         features = ["hosp", "hosp_rolDeriv7",
                     "P_TOUS_AGES", "P_TOUS_AGES_rolDeriv7",
                     "P_60_90_PLUS_ANS", "P_60_90_PLUS_ANS_rolDeriv7",
