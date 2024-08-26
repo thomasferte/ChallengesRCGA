@@ -66,6 +66,8 @@ class CsvGeneticAlgorithm(object):
       # remove unneeded paramters
       list_params.remove("job_id")
       list_params.remove("value")
+      list_params.remove("penalized_value")
+      list_params.remove("nbFeaturesSelected")
       
       params = {}
       for param_name in list_params:

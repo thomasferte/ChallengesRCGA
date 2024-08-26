@@ -246,8 +246,8 @@ def GA_or_randomsearch(path_file, Npop):
   
   return res
 
-def genetic_sampler_from_df(perf_df, hp_df, Npop, Ne, pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 1/10):
-    genetic_sampler = CsvGeneticAlgorithm(hp_df=hp_df, perf_df=perf_df, Npop = Npop, Ne = Ne, pmutQuant=pmutQuant, pmutCat=pmutCat, sigma=sigma, sigma_halv_thresh=sigma_halv_thresh, sigmahalv=sigmahalv)
+def genetic_sampler_from_df(perf_df, hp_df, Npop, Ne, pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 1/10, NbFeaturesPenalty = 0, TournamentFeaturesPenalty = False, Ntournament = 2):
+    genetic_sampler = CsvGeneticAlgorithm(hp_df=hp_df, perf_df=perf_df, Npop = Npop, Ne = Ne, pmutQuant=pmutQuant, pmutCat=pmutCat, sigma=sigma, sigma_halv_thresh=sigma_halv_thresh, sigmahalv=sigmahalv, NbFeaturesPenalty = NbFeaturesPenalty, TournamentFeaturesPenalty = TournamentFeaturesPenalty, Ntournament = Ntournament)
     return genetic_sampler.sample_relative()
 
 def scenari_define_hp_distribution(scenari, features):
@@ -362,7 +362,7 @@ def features_nbesn_optimizer_from_scenari(scenari):
     
     return forecast_days, features, global_optimizer ,nb_esn
 
-def csv_sampler(path_file, data_path, output_path, scenari, array_id = 1, Npop = 200, Ne = 100, nb_trials = 3200, date = '2021-03-01', units = 500, pmutQuant = .5, pmutCat = .25, sigma = 1, sigmahalv = 1/10):
+def csv_sampler(path_file, data_path, output_path, scenari, array_id = 1, Npop = 200, Ne = 100, nb_trials = 3200, date = '2021-03-01', units = 500, pmutQuant = .5, pmutCat = .25, sigma = 1, sigmahalv = 1/10, NbFeaturesPenalty = 0, TournamentFeaturesPenalty = False, Ntournament = 2):
     
     forecast_days, features, global_optimizer, nb_esn = features_nbesn_optimizer_from_scenari(scenari)
     
@@ -394,9 +394,10 @@ def csv_sampler(path_file, data_path, output_path, scenari, array_id = 1, Npop =
                 # keep only hp and value
                 col_to_keep = hp_df.hp.to_list()
                 col_to_keep.append("value")
+                col_to_keep.append("nbFeaturesSelected")
                 col_to_keep.append("job_id")
                 filtered_perf_df = perf_df.loc[:, col_to_keep]
-                params = genetic_sampler_from_df(perf_df=filtered_perf_df, hp_df=hp_df, Npop=Npop, Ne=Ne, pmutQuant=pmutQuant, pmutCat=pmutCat, sigma=sigma, sigmahalv=sigmahalv)
+                params = genetic_sampler_from_df(perf_df=filtered_perf_df, hp_df=hp_df, Npop=Npop, Ne=Ne, pmutQuant=pmutQuant, pmutCat=pmutCat, sigma=sigma, sigmahalv=sigmahalv, NbFeaturesPenalty = NbFeaturesPenalty, TournamentFeaturesPenalty = TournamentFeaturesPenalty, Ntournament = Ntournament)
             else:
                 optimizer = "RS"
                 params = random_sampler_from_hp_df(hp_df=hp_df)

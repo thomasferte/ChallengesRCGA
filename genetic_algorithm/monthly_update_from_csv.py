@@ -119,7 +119,7 @@ def reevaluate_previous_trials(previous_perf_path, perf_folder, date, data_path,
     
     return new_perf_file
 
-def evolutive_hp_csv(array_id, perf_folder, first_perf_file, data_path, scenari, Npop = 200, Ne = 100, nb_trials = 1200, min_date_eval = datetime.strptime('2021-03-01', '%Y-%m-%d'), units = 500, update = "month", pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 10):
+def evolutive_hp_csv(array_id, perf_folder, first_perf_file, data_path, scenari, Npop = 200, Ne = 100, nb_trials = 1200, min_date_eval = datetime.strptime('2021-03-01', '%Y-%m-%d'), units = 500, update = "month", pmutQuant = .5, pmutCat = .25, sigma = 1, sigma_halv_thresh = 6, sigmahalv = 10, NbFeaturesPenalty = 0, TournamentFeaturesPenalty = False, Ntournament = 2):
     ##### get all dates files
     files = pd.DataFrame(glob.glob(data_path + '*.csv'),columns = ['full_path'])
     files['file_name'] = files.full_path.str.split(data_path,n=1).str[-1]
@@ -183,7 +183,10 @@ def evolutive_hp_csv(array_id, perf_folder, first_perf_file, data_path, scenari,
                         pmutQuant = pmutQuant,
                         pmutCat = pmutCat,
                         sigma = sigma,
-                        sigmahalv = sigmahalv
+                        sigmahalv = sigmahalv,
+                        NbFeaturesPenalty = NbFeaturesPenalty,
+                        TournamentFeaturesPenalty = TournamentFeaturesPenalty,
+                        Ntournament = Ntournament
                         )
                     trial_sampler_ok = 0
                 except pd.errors.EmptyDataError:
