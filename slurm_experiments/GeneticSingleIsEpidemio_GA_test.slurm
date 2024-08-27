@@ -48,7 +48,7 @@ export MKL_NUM_THREADS=1
 
 module load build/conda/4.10
 conda activate testenv
-cd /home/tferte/high_dimension_reservoir
+cd /home/tferte/ChallengesRCGA
 
 ulimit -c 0
 
