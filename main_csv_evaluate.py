@@ -24,8 +24,11 @@ slurm_scenari = dict_GA_parameters["scenari"]
 pmutQuant = dict_GA_parameters["pmutQuant"]
 pmutCat = dict_GA_parameters["pmutCat"]
 sigmahalv = dict_GA_parameters["sigmahalv"]
+NbFeaturesPenalty = dict_GA_parameters["NbFeaturesPenalty"]
+TournamentFeaturesPenalty = dict_GA_parameters["TournamentFeaturesPenalty"]
+Ntournament = dict_GA_parameters["Ntournament"]
 
-print(f"------- GA HP : pmutQuant = {pmutQuant}, pmutCat = {pmutCat}, sigmahalv = {sigmahalv} ------------")
+print(f"------- GA HP : pmutQuant = {pmutQuant}, pmutCat = {pmutCat}, sigmahalv = {sigmahalv}, NbFeaturesPenalty = {NbFeaturesPenalty}, TournamentFeaturesPenalty = {TournamentFeaturesPenalty}, Ntournament = {Ntournament} ------------")
 
 ### Define population size if needed
 if slurm_scenari in ["GeneticSingleIs_GA_1000"]:
@@ -78,7 +81,10 @@ csv_sampler(
   nb_trials=nb_trials_first,
   pmutQuant = pmutQuant,
   pmutCat = pmutCat,
-  sigmahalv = sigmahalv
+  sigmahalv = sigmahalv,
+  NbFeaturesPenalty = NbFeaturesPenalty,
+  TournamentFeaturesPenalty = TournamentFeaturesPenalty,
+  Ntournament = Ntournament
   )
 
 if slurm_scenari not in ["GeneticSingleIs_GA_1000", "GeneticSingleIs_GA_21", "xgb_pred_RS_21", "GeneticSingleIs_GA_7", "xgb_pred_RS_7", "GeneticSingleIs_GA_noGironde", "GeneticSingleIs_GA_noWeather", "GeneticSingleIs_GA_noUrgSamu", "GeneticSingleIs_GA_noDeriv"]:
@@ -96,5 +102,8 @@ if slurm_scenari not in ["GeneticSingleIs_GA_1000", "GeneticSingleIs_GA_21", "xg
       nb_trials = nb_trials_update,
       pmutQuant = pmutQuant,
       pmutCat = pmutCat,
-      sigmahalv = sigmahalv
+      sigmahalv = sigmahalv,
+      NbFeaturesPenalty = NbFeaturesPenalty,
+      TournamentFeaturesPenalty = TournamentFeaturesPenalty,
+      Ntournament = Ntournament
       )
