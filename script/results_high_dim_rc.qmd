@@ -34,14 +34,18 @@ set.seed(1)
 
 Choice of hyperparameters :
 
-sigma leaking rate : because depending on setting, convergence to different leaking rate seem to occur. Furthermore, low leaking rate seemed to achieve better performance
+sigma leaking rate : because depending on setting, convergence to
+different leaking rate seem to occur. Furthermore, low leaking rate
+seemed to achieve better performance
 
-pmutCat : because hyperparameter monthly update seem not to improve performance which is counterintuitive as important features should evolve in this context of non stationary time series.
+pmutCat : because hyperparameter monthly update seem not to improve
+performance which is counterintuitive as important features should
+evolve in this context of non stationary time series.
 
 Grid :
 
-- sigma leaking rate = c(0.016, 0.04, 0.1, 0.25)
-- pmutCat = c(0.1, 0.2, 0.4, 0.8)
+-   sigma leaking rate = c(0.016, 0.04, 0.1, 0.25)
+-   pmutCat = c(0.1, 0.2, 0.4, 0.8)
 
 # Results
 
@@ -49,7 +53,10 @@ Grid :
 
 # Setting
 
-Figure above describes the evolution of 4 features (RT-PCR, positive RT-PCR, IPTCC and hospitalization) and of the outcome. We observe that the relationship between explanatory features and the outcome evolves over time making this problem complex.
+Figure above describes the evolution of 4 features (RT-PCR, positive
+RT-PCR, IPTCC and hospitalization) and of the outcome. We observe that
+the relationship between explanatory features and the outcome evolves
+over time making this problem complex.
 
 ```{r fig.cap="Description of the outcome and 4 chosen features"}
 df_data <- read.csv(here::here("../high_dimension_reservoir/data_obfuscated/20220117.csv"))
@@ -118,7 +125,10 @@ df_all <- df_all_temp %>% slice_min(hp_date) %>% mutate(update = "No") %>%
 
 ### Sanity check
 
-First, we check that there is 40 reservoir prediction for each day of the prediction for each scenario. We observe that there is indeed a forecast for each day. Some days have less than 40 reservoirs but the minimum is 37 which seems acceptable.
+First, we check that there is 40 reservoir prediction for each day of
+the prediction for each scenario. We observe that there is indeed a
+forecast for each day. Some days have less than 40 reservoirs but the
+minimum is 37 which seems acceptable.
 
 ```{r sanitycheck, fig.height=6, fig.cap="Number of reservoir per day for prediction"}
 df_all |> 
@@ -391,7 +401,6 @@ ggsave(plot = plot_perf_train_and_test,
 
 ```
 
-
 ### Hyperparameter evolution
 
 ```{r fig.height=8, fig.cap="Numeric hyperparameter, density of 40 best genetic individuals per hyperparameter update date."}
@@ -524,7 +533,6 @@ ggsave(plot_lr_influence_train_set, file = here::here("figures/plot_lr_influence
        useDingbats = TRUE)
 ```
 
-
 ```{r}
 df_lr <- df_all_hp |> 
   select(job_id, file_hp, leaking_rate) |> 
@@ -542,7 +550,6 @@ df_all_lr <- df_all |>
                             "leaking_rate >= 1e-2"),
          outcomeDateYM = format(outcomeDate, "%Y-%m"))
 ```
-
 
 ```{r}
 df_perf_lr <- df_all_lr %>%
@@ -663,7 +670,6 @@ ggsave(plot = plot_influence_lr,
        height = 4, width = 7, useDingbats = TRUE)
 ```
 
-
 ## Categorical hyperparameters
 
 ```{r fig.height=8, fig.cap="Number of selected features among the best genetic individuals."}
@@ -743,7 +749,6 @@ ggsave(plot_distribution_feature_selection,
        width = 8)
 ```
 
-
 ```{r}
 plot_cat_features <- ggdraw() +
   draw_plot(plot_best_numeric_hp +
@@ -765,4 +770,3 @@ ggsave(plot = plot_cat_features,
        filename = here::here("figures/plot_cat_features.pdf"),
        height = 12, width = 8, useDingbats = TRUE)
 ```
-
