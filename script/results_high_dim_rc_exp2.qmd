@@ -31,11 +31,20 @@ set.seed(1)
 
 ### Penalization exploration
 
-We explored to variant of the GA optimizing both the number of features and the MAE :
+We explored to variant of the GA optimizing both the number of features
+and the MAE :
 
-1) We changed the fitness function from $MAE$ to $MAE + \theta * nbfeatures$. In this case, $\theta$ is a penalty term penalizing genetic individuals selecting many features. We explore $\theta \in \{1e^{-3}, 5*1e^{-3}, 1e^{-2})$.
-2) We changed the tournament selection. When selecting new parents, we perform a three individuals tournament (instead of two), then we exclude the individual with the larger number of features and then we select the individual with the lowest $MAE$
-3) Finally, we explored an epidemiology guided feature selection where we keep the original GA but we only provide 11 features guided by expert knowledge.
+1)  We changed the fitness function from $MAE$ to
+    $MAE + \theta * nbfeatures$. In this case, $\theta$ is a penalty
+    term penalizing genetic individuals selecting many features. We
+    explore $\theta \in \{1e^{-3}, 5*1e^{-3}, 1e^{-2})$.
+2)  We changed the tournament selection. When selecting new parents, we
+    perform a three individuals tournament (instead of two), then we
+    exclude the individual with the larger number of features and then
+    we select the individual with the lowest $MAE$
+3)  Finally, we explored an epidemiology guided feature selection where
+    we keep the original GA but we only provide 11 features guided by
+    expert knowledge.
 
 # Results
 
@@ -58,12 +67,14 @@ df_all_temp <- lapply(ls_files_full, read.csv) %>%
 df_all <- df_all_temp %>% slice_min(hp_date) %>% mutate(update = "No") %>%
   bind_rows(df_all_temp %>% slice_max(hp_date) %>% mutate(update = "Yes")) %>%
   ungroup() |> 
-  mutate(Penalization = case_when(model == "GeneticSingleIs_GA_epidemio" ~ -1,
+  mutate(Penalization = case_when(model == "GeneticSingleIs_GA_epidemio" ~ -2,
+                                  model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty9999_TournamentFeaturesPenalty0" ~ -1,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty0_TournamentFeaturesPenalty1" ~ 0,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty1_TournamentFeaturesPenalty0" ~ 1e-3,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty5_TournamentFeaturesPenalty0" ~ 5*1e-3,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty10_TournamentFeaturesPenalty0" ~ 1e-2),
-         model = case_when(Penalization == -1 ~ "Epidemio",
+         model = case_when(Penalization == -2 ~ "Epidemio",
+                           Penalization == -1 ~ "Mutation adaptation",
                            Penalization == 0 ~ "Tournament penalization",
                            Penalization > 0 ~ paste0("Penalization = ", Penalization)),
          update = factor(update, levels = c("No", "Yes"), labels = c("No monthly update", "Monthly update")))
@@ -172,12 +183,14 @@ df_all_hp <- lapply(ls_files_full,
          last_used_observation = as.Date(file_hp),
          model = gsub(model, pattern = ".*hyperparameters//", replacement = ""),
          model = gsub(model, pattern = "_hyperparameters.csv$", replacement = "")) |> 
-  mutate(Penalization = case_when(model == "GeneticSingleIs_GA_epidemio" ~ -1,
+  mutate(Penalization = case_when(model == "GeneticSingleIs_GA_epidemio" ~ -2,
+                                  model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty9999_TournamentFeaturesPenalty0" ~ -1,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty0_TournamentFeaturesPenalty1" ~ 0,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty1_TournamentFeaturesPenalty0" ~ 1e-3,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty5_TournamentFeaturesPenalty0" ~ 5*1e-3,
                                   model == "GeneticSingleIs_GA_GAPENAL_NbFeaturesPenalty10_TournamentFeaturesPenalty0" ~ 1e-2),
-         model = case_when(Penalization == -1 ~ "Epidemio",
+         model = case_when(Penalization == -2 ~ "Epidemio",
+                           Penalization == -1 ~ "Mutation adaptation",
                            Penalization == 0 ~ "Tournament penalization",
                            Penalization > 0 ~ paste0("Penalization = ", Penalization))) |> 
   filter(last_used_observation < as.Date("2022-01-17"),
@@ -198,12 +211,11 @@ df_all_hp |>
   summarise(n = n(), .groups = "drop") |> 
   ggplot(mapping = aes(x = last_used_observation, y = n, fill = model)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = c("#001219", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
+  scale_fill_manual(values = c("#001219", "#BB3E03", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
   labs(y = "nb of genetic individuals",
        x = "update date") +
   theme_minimal()
 ```
-
 
 ## Numeric hyperparameters
 
@@ -221,7 +233,7 @@ plot_best_numeric_hp <- df_all_hp_best40 |>
                        fill = hyperparameter,
                        color = hyperparameter)) +
   ggridges::geom_density_ridges(alpha = 0.5) +
-  facet_grid(model ~ ., scales = "free_y", switch = "both") +
+  facet_wrap(model ~ ., scales = "free_y", switch = "both") +
   scale_x_log10(breaks = c(1e-10, 1e-5, 1, 1e5)) +
   scale_fill_manual(values = c("#264653", "#2A9D8F", "#F4A261", "#E76F51")) +
   scale_color_manual(values = c("#264653", "#2A9D8F", "#F4A261", "#E76F51")) +
@@ -261,7 +273,7 @@ plot_nb_features <- temp |>
   geom_errorbar(width = 0, position = position_dodge(width=.5)) +
   geom_point(position = position_dodge(width=.5)) +
   geom_line(position = position_dodge(width=.5)) +
-  scale_color_manual(values = c("#001219", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
+  scale_color_manual(values = c("#001219", "#BB3E03", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
   scale_y_continuous(breaks = seq(0,400, by =20)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90)) +
@@ -338,4 +350,40 @@ ggplot(data = df_plot,
        x = "Date update")
 ```
 
+```{r fig.height=8}
+df_plot <- df_freq_selection |> 
+  filter(model == "Mutation adaptation") |> 
+  group_by(name) |> 
+  mutate(mean_prop = sum(value*(last_used_observation == "2022-01-01"))) |>
+  ungroup() |> 
+  mutate(name = FctCleanFeaturesName(name),
+         name = as.factor(name),
+         name = forcats::fct_reorder(name, -mean_prop),
+         deriv = grepl(name, pattern = "(1st d)"),
+         deriv = factor(deriv,
+                        levels = c(F,T),
+                        labels = c("Raw", "1st derivative")))
 
+ggplot(data = df_plot,
+       mapping = aes(y = value,
+                     x = last_used_observation,
+                     group = name,
+                     label = name,
+                     color = name)) +
+  geom_line() +
+  geom_text_repel(data = df_plot |> 
+                    filter(last_used_observation == "2022-01-01") |> 
+                    filter(value > 0.25),
+                  size = 3,
+                  nudge_x = 6,
+                  direction = "y",
+                  force = 5,
+                  arrow = arrow(length = unit(0.01, "npc"), type = "closed")) +
+  scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1)) +
+  scale_color_viridis_d(option = "B", end = 0.85) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90),
+        legend.position = "none") +
+  labs(y = "Frequency of feature selection",
+       x = "Date update")
+```
