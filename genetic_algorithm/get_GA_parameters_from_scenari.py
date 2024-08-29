@@ -22,7 +22,10 @@ def get_GA_parameters_from_scenari(slurm_scenari):
         sigmahalv = extract_value(r"sigmahalv(\d+)", slurm_scenari) / 1000
     elif "GAPENAL" in slurm_scenari:
         base_scenario = slurm_scenari.split('_GAPENAL')[0]
-        NbFeaturesPenalty = extract_value(r"NbFeaturesPenalty(\d+)", slurm_scenari) / 1000
+        NbFeaturesPenalty = extract_value(r"NbFeaturesPenalty(\d+)", slurm_scenari)
+        if NbFeaturesPenalty != 9999 :
+            NbFeaturesPenalty = NbFeaturesPenalty/1000
+        
         TournamentFeaturesPenalty = extract_value(r"TournamentFeaturesPenalty(\d+)", slurm_scenari) == 1
         Ntournament = 3
     

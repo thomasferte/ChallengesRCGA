@@ -18,8 +18,17 @@ class CsvGeneticAlgorithm(object):
         self.sigma = sigma
         self.sigma_halv_thresh = sigma_halv_thresh
         self.sigmahalv = sigmahalv
-        self.NbFeaturesPenalty = NbFeaturesPenalty
+        
+        if NbFeaturesPenalty == 9999 :
+            print("---- Adapt mutation of categorical features to number of features ----")
+            self.NbFeaturesPenalty = 0
+            self.adaptCatMutation = 1
+        else :
+            self.NbFeaturesPenalty = NbFeaturesPenalty
+            self.adaptCatMutation = 0
+        
         self.TournamentFeaturesPenalty = TournamentFeaturesPenalty
+        self.TotalnbFeatures = hp_df['hp'].str.endswith('_bin').sum()
 
     # Keep top Npop best finished trials
     def keepBestNPopTrials(self):
@@ -63,6 +72,17 @@ class CsvGeneticAlgorithm(object):
 
     def crossoverMutation(self, pere, mere):
       list_params = pere.index.to_list()
+      
+      
+      # set quali mutation probability
+      if self.adaptCatMutation == 0 :
+        p_high = .5
+      else :
+        mean_nb_features = (pere["nbFeaturesSelected"] + mere["nbFeaturesSelected"])/2
+        p_high = mean_nb_features/self.TotalnbFeatures/2
+      
+      p_low = 1-p_high
+      
       # remove unneeded paramters
       list_params.remove("job_id")
       list_params.remove("value")
@@ -115,7 +135,8 @@ class CsvGeneticAlgorithm(object):
               else :
                   param_child = param_mere
               if(boolMutationCat):
-                  param_child = np.random.choice([hp_dict["low"], hp_dict["high"]])
+                  param_child = np.random.choice(a = [hp_dict["low"], hp_dict["high"]],
+                    p = [p_low,p_high])
               
           if(hp_dict["type_hp"] == 'int'):
               # how to update integer parameter
