@@ -54,6 +54,8 @@ prediction](results_high_dim_rc_exp2_files/figure-commonmark/sanitycheck-1.png)
 |:---|:---|:---|:---|:---|:---|
 | Epidemio | No monthly update | 15.4(±13.1) | 0.27(±0.33) | -3.18(±6.59) | 0.85(±1.74) |
 | Epidemio | Monthly update | 15.23(±13.78) | 0.24(±0.35) | -3.35(±8.58) | 0.84(±2.1) |
+| Mutation adaptation | No monthly update | 15.04(±12.02) | 0.25(±0.33) | -3.55(±6.94) | 0.85(±1.47) |
+| Mutation adaptation | Monthly update | 15.32(±12.99) | 0.25(±0.35) | -3.27(±6.66) | 0.86(±1.34) |
 | Penalization = 0.001 | No monthly update | 15.11(±13.08) | 0.25(±0.35) | -3.48(±6.66) | 0.84(±0.84) |
 | Penalization = 0.001 | Monthly update | 15.63(±13.26) | 0.28(±0.36) | -2.96(±5.91) | 0.86(±1.61) |
 | Penalization = 0.005 | No monthly update | 15.25(±12.75) | 0.26(±0.32) | -3.34(±6.88) | 0.84(±1.74) |
@@ -89,3 +91,5 @@ individuals.](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-7-1
 ![](results_high_dim_rc_exp2_files/figure-commonmark/freqselectionfeatures-1.png)
 
 ![](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-8-1.png)
+
+![](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-9-1.png)
