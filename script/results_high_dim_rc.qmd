@@ -246,6 +246,19 @@ df_perf %>%
 #   kableExtra::kable_styling()
 
 
+a = df_perf %>%
+  ungroup() |> 
+  mutate(across(.cols = c(ends_with("_median"), ends_with("_min"), ends_with("_max")),
+                ~ round(.x, 2))) |>
+  mutate(update = update,
+         pmutCat = pmutCat,
+         lr_sigma = lr_sigma,
+         MAE = paste0(AE_median, "(", AE_min, " ; ", AE_max, ")"),
+         .keep = "none") |>
+  tidyr::pivot_wider(names_from = update, values_from = MAE) |> 
+  knitr::kable(format = "latex", booktabs = TRUE)
+a
+
 ```
 
 ```{r tileperf}

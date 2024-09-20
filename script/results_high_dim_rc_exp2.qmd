@@ -56,6 +56,7 @@ path_predictions <- here::here("results/experience_2/prediction")
 ls_files <- list.files(path_predictions)
 ls_files_full <- list.files(path_predictions, full.names = TRUE)
 names(ls_files_full) <- gsub(ls_files, pattern = "_combined.csv", replacement = "")
+ls_files_full <- grep(ls_files_full, pattern = "*_epidemio_*", invert = TRUE, value = "TRUE")
 
 df_all_temp <- lapply(ls_files_full, read.csv) %>%
   bind_rows(.id = "model") %>%
@@ -78,6 +79,7 @@ df_all <- df_all_temp %>% slice_min(hp_date) %>% mutate(update = "No") %>%
                            Penalization == 0 ~ "Tournament penalization",
                            Penalization > 0 ~ paste0("Penalization = ", Penalization)),
          update = factor(update, levels = c("No", "Yes"), labels = c("No monthly update", "Monthly update")))
+
 ```
 
 ### Sanity check
@@ -88,7 +90,11 @@ forecast for each day. Some days have less than 40 reservoirs but the
 minimum is 39 which seems acceptable.
 
 ```{r sanitycheck, fig.height=4, fig.cap="Number of reservoir per day for prediction"}
-df_all |> 
+expand.grid(update = unique(df_all$update),
+            model = unique(df_all$model),
+            outcomeDate = unique(df_all$outcomeDate)) |> 
+  full_join(df_all,
+            by = c("update", "model", "outcomeDate")) |> 
   group_by(update, model, outcomeDate) |> 
   summarise(n = n(), .groups = "drop") |> 
   ggplot(mapping = aes(x = outcomeDate, y = n, color = update)) +
@@ -97,8 +103,7 @@ df_all |>
   theme_minimal() +
   theme(strip.text.y = element_text(angle = 0),
         legend.position = "none") +
-  labs(x = "Date", y = "Nb of reservoir") +
-  ylim(0, 40)
+  labs(x = "Date", y = "Nb of reservoir")
 ```
 
 ### Performance

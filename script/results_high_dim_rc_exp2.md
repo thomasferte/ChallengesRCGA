@@ -52,8 +52,6 @@ prediction](results_high_dim_rc_exp2_files/figure-commonmark/sanitycheck-1.png)
 
 | model | update | MAE | MRE | MAEB | MREB |
 |:---|:---|:---|:---|:---|:---|
-| Epidemio | No monthly update | 15.4(±13.1) | 0.27(±0.33) | -3.18(±6.59) | 0.85(±1.74) |
-| Epidemio | Monthly update | 15.23(±13.78) | 0.24(±0.35) | -3.35(±8.58) | 0.84(±2.1) |
 | Mutation adaptation | No monthly update | 15.04(±12.02) | 0.25(±0.33) | -3.55(±6.94) | 0.85(±1.47) |
 | Mutation adaptation | Monthly update | 15.32(±12.99) | 0.25(±0.35) | -3.27(±6.66) | 0.86(±1.34) |
 | Penalization = 0.001 | No monthly update | 15.11(±13.08) | 0.25(±0.35) | -3.48(±6.66) | 0.84(±0.84) |
@@ -62,8 +60,8 @@ prediction](results_high_dim_rc_exp2_files/figure-commonmark/sanitycheck-1.png)
 | Penalization = 0.005 | Monthly update | 15.19(±12.84) | 0.27(±0.34) | -3.4(±5.78) | 0.84(±0.99) |
 | Penalization = 0.01 | No monthly update | 15.37(±12.84) | 0.26(±0.34) | -3.22(±6.29) | 0.87(±1.42) |
 | Penalization = 0.01 | Monthly update | 15.53(±12.92) | 0.26(±0.35) | -3.05(±5.74) | 0.87(±1.07) |
-| Tournament penalization | No monthly update | 14.39(±12.71) | 0.26(±0.34) | -3.14(±6.2) | 0.85(±1.29) |
-| Tournament penalization | Monthly update | 14.53(±12.84) | 0.29(±0.36) | -3(±5.87) | 0.87(±1.02) |
+| Tournament penalization | No monthly update | 15.4(±12.97) | 0.26(±0.34) | -3.19(±5.99) | 0.86(±1.42) |
+| Tournament penalization | Monthly update | 14.81(±12.5) | 0.24(±0.32) | -3.78(±5.97) | 0.84(±1.25) |
 
 Model performance
 
