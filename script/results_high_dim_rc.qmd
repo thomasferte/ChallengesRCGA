@@ -108,6 +108,9 @@ df_all_temp <- lapply(ls_files_full, read.csv) %>%
 
 df_all <- df_all_temp %>% slice_min(hp_date) %>% mutate(update = "No") %>%
   bind_rows(df_all_temp %>% slice_max(hp_date) %>% mutate(update = "Yes")) %>%
+  mutate(model = if_else(grepl(model, pattern = "_v2$|_v3$"),
+                         false = paste0(model, "_v1"),
+                         true = model)) |> 
   ungroup() |> 
   tidyr::separate_wider_regex(
     model,
@@ -116,7 +119,9 @@ df_all <- df_all_temp %>% slice_min(hp_date) %>% mutate(update = "No") %>%
                  "_pmutCat", 
                  pmutCat = "[0-9]+",
                  "_sigmahalv",
-                 lr_sigma = "[0-9]+")) |> 
+                 lr_sigma = "[0-9]+",
+                 "_v",
+                 iter = "[0-9]+")) |> 
   mutate(across(.cols = c(pmutQuant, pmutCat, lr_sigma),
                 .fns = ~ as.numeric(.x)/1000),
          short_name_model = paste0("PmutQuant = ", pmutQuant, " ; PmutCat = ", pmutCat, " ; lr sigma = ", lr_sigma),
@@ -130,27 +135,36 @@ the prediction for each scenario. We observe that there is indeed a
 forecast for each day. Some days have less than 40 reservoirs but the
 minimum is 37 which seems acceptable.
 
-```{r sanitycheck, fig.height=6, fig.cap="Number of reservoir per day for prediction"}
-df_all |> 
-  group_by(update, short_name_model, outcomeDate) |> 
+```{r sanitycheck, fig.height=12, fig.cap="Number of reservoir per day for prediction"}
+
+df_grid <- expand.grid(iter = unique(df_all$iter),
+                       update = unique(df_all$update),
+                       short_name_model = unique(df_all$short_name_model),
+                       outcomeDate = unique(df_all$outcomeDate))
+
+df_plot_sanity <- df_all |> 
+  group_by(iter, update, short_name_model, outcomeDate) |> 
   summarise(n = n(), .groups = "drop") |> 
-  ggplot(mapping = aes(x = outcomeDate, y = n, color = update)) +
+  full_join(df_grid) |> 
+  mutate(n = if_else(is.na(n), 0, n))
+
+df_plot_sanity |> 
+  ggplot(mapping = aes(x = outcomeDate, y = n, color = iter)) +
   geom_point(linewidth = 1) +
   facet_grid(short_name_model ~ update) +
   theme_minimal() +
-  theme(strip.text.y = element_text(angle = 0),
-        legend.position = "none") +
+  theme(strip.text.y = element_text(angle = 0)) +
   labs(x = "Date", y = "Nb of reservoir")
 ```
 
 ### Performance
 
 ```{r}
-df_perf <- df_all %>%
+df_perf1 <- df_all %>%
   mutate(outcome = if_else(outcome < 10, 10, outcome),
          pred = if_else(pred < 10, 10, pred),
          hosp = if_else(hosp < 10, 10, hosp)) %>%
-  group_by(outcomeDate, short_name_model, pmutQuant, pmutCat, lr_sigma, update) %>%
+  group_by(iter, outcomeDate, short_name_model, pmutQuant, pmutCat, lr_sigma, update) %>%
   summarise(outcome = unique(outcome),
             hosp = unique(hosp),
             pred = median(pred),
@@ -160,7 +174,7 @@ df_perf <- df_all %>%
          baseline_AE = abs(hosp - outcome),
          AE_baseline = AE - baseline_AE,
          RE_baseline = AE/baseline_AE) %>%
-  group_by(short_name_model, pmutQuant, pmutCat, lr_sigma, update) %>%
+  group_by(iter, short_name_model, pmutQuant, pmutCat, lr_sigma, update) %>%
   summarise(sd_AE = sd(AE, na.rm = T),
             AE = mean(AE, na.rm = T),
             sd_AE_baseline = sd(AE_baseline, na.rm = T),
@@ -170,19 +184,42 @@ df_perf <- df_all %>%
             sd_RE_baseline = sd(RE_baseline, na.rm = TRUE),
             RE_baseline = median(RE_baseline, na.rm = TRUE),
             .groups = "drop") %>%
-  select(short_name_model, pmutQuant, pmutCat, lr_sigma, update, AE, sd_AE, AE_baseline, sd_AE_baseline, RE, sd_RE, RE_baseline, sd_RE_baseline)
+  select(iter, short_name_model, pmutQuant, pmutCat, lr_sigma, update, AE, sd_AE, AE_baseline, sd_AE_baseline, RE, sd_RE, RE_baseline, sd_RE_baseline)
+
+df_perf <- df_perf1 |> 
+  group_by(short_name_model, pmutQuant, pmutCat, lr_sigma, update) |> 
+  summarise(across(.cols = c(AE, AE_baseline, RE, RE_baseline),
+                   .fns = list(median = median,
+                               min = min,
+                               max = max)))
+
+# df_perf %>%
+#   mutate(across(c("AE", "RE", "AE_baseline", "RE_baseline", starts_with("sd_")),
+#                 ~ round(.x, 2))) |> 
+#   mutate(update = update,
+#          pmutCat = pmutCat,
+#          lr_sigma = lr_sigma,
+#          MAE = paste0(AE, "(\u00B1", sd_AE, ")"),
+#          MRE = paste0(RE, "(\u00B1", sd_RE, ")"),
+#          MAEB = paste0(AE_baseline, "(\u00B1", sd_AE_baseline, ")"),
+#          MREB = paste0(RE_baseline, "(\u00B1", sd_RE_baseline, ")"),
+#          .keep = "none") |> 
+#   # knitr::kable(format = "latex", booktabs = TRUE)
+#   knitr::kable(digits = 2,
+#                caption = "Model performance") %>%
+#   kableExtra::kable_styling()
 
 df_perf %>%
-  mutate(across(c("AE", "RE", "AE_baseline", "RE_baseline", starts_with("sd_")),
-                ~ round(.x, 2))) |> 
+  mutate(across(.cols = c(ends_with("_median"), ends_with("_min"), ends_with("_max")),
+                ~ round(.x, 2))) |>
   mutate(update = update,
          pmutCat = pmutCat,
          lr_sigma = lr_sigma,
-         MAE = paste0(AE, "(\u00B1", sd_AE, ")"),
-         MRE = paste0(RE, "(\u00B1", sd_RE, ")"),
-         MAEB = paste0(AE_baseline, "(\u00B1", sd_AE_baseline, ")"),
-         MREB = paste0(RE_baseline, "(\u00B1", sd_RE_baseline, ")"),
-         .keep = "none") |> 
+         MAE = paste0(AE_median, "(", AE_min, " ; ", AE_max, ")"),
+         MRE = paste0(RE_median, "(", RE_min, " ; ", RE_max, ")"),
+         MAEB = paste0(AE_baseline_median, "(", AE_baseline_min, " ; ", AE_baseline_max, ")"),
+         MREB = paste0(RE_baseline_median, "(", RE_baseline_min, " ; ", RE_baseline_max, ")"),
+         .keep = "none") |>
   # knitr::kable(format = "latex", booktabs = TRUE)
   knitr::kable(digits = 2,
                caption = "Model performance") %>%
@@ -213,7 +250,7 @@ df_perf %>%
 
 ```{r tileperf}
 df_perf |> 
-  ggplot(mapping = aes(x = lr_sigma, y = pmutCat, fill = AE, label = round(AE, 2))) +
+  ggplot(mapping = aes(x = lr_sigma, y = pmutCat, fill = AE_median, label = round(AE_median, 2))) +
   geom_tile() +
   geom_text(color = "white") +
   facet_wrap(update ~ ., ncol = 1) +
@@ -230,9 +267,10 @@ df_perf |>
 graph_perf <- df_perf |> 
   mutate(pmutCat = as.factor(pmutCat),
          pmutCat = forcats::fct_rev(pmutCat)) |> 
-  ggplot(mapping = aes(x = lr_sigma, y = AE, color = pmutCat, group = pmutCat)) +
-  geom_point() +
-  geom_line() +
+  ggplot(mapping = aes(x = lr_sigma, y = AE_median, ymin = AE_min, ymax = AE_max, color = pmutCat, group = pmutCat)) +
+  geom_point(position = position_dodge(width = .1)) +
+  geom_errorbar(position = position_dodge(width = .1), width = 0) +
+  geom_line(position = position_dodge(width = .1)) +
   facet_wrap(update ~ .) +
   theme_minimal() +
   scale_color_manual(values = c("black", "#03045E", "#0077B6", "#00B4D8")) +
@@ -250,13 +288,16 @@ ggsave(filename = here::here("figures/graph_perf.pdf"), height = 3, width = 10)
 ```{r}
 path_hp <- here::here("results/experience_1/hyperparameters/")
 ls_files_full <- list.files(path_hp, full.names = TRUE, recursive = TRUE)
+ls_files_full <- grep(ls_files_full, pattern = "_v2_|_v3_", invert = TRUE, value = TRUE)
 numeric_hp <- c("ridge",
                 "spectral_radius",
                 "leaking_rate",
                 "input_scaling")
 
 df_all_hp <- lapply(ls_files_full,
-                    function(file_i) readr::read_csv(file_i, id = "model")) |> 
+                    function(file_i) readr::read_csv(file_i, id = "model") |> 
+                      mutate(across(.cols = c(spectral_radius, value),
+                                    .fns = as.numeric))) |> 
   bind_rows() |> 
   tibble::rowid_to_column(var = "genetic_id") |> 
   mutate(file_hp = gsub(x = file_hp, pattern = ".csv", replacement = ""),
@@ -265,7 +306,8 @@ df_all_hp <- lapply(ls_files_full,
                            "2021-03-01",
                            file_hp),
          last_used_observation = as.Date(file_hp),
-         model = gsub(model, pattern = ".*GeneticSingleIs_GA_GAHPDEF_", replacement = "")) |> 
+         model = gsub(model, pattern = ".*GeneticSingleIs_GA_GAHPDEF_", replacement = ""),
+         model = gsub(model, pattern = "_hyperparameters.csv", replacement = "")) |> 
   tidyr::separate_wider_regex(
     model,
     patterns = c("pmutQuant",
@@ -273,8 +315,7 @@ df_all_hp <- lapply(ls_files_full,
                  "_pmutCat", 
                  pmutCat = "[0-9]+",
                  "_sigmahalv",
-                 lr_sigma = "[0-9]+",
-                 "_.*")) |> 
+                 lr_sigma = "[0-9]+")) |> 
   mutate(across(.cols = c(pmutQuant, pmutCat, lr_sigma),
                 .fns = ~ as.numeric(.x)/1000),
          short_name_model = paste0("PmutQuant = ",
@@ -369,7 +410,6 @@ ggsave(plot = plot_best_numeric_hp_values.pdf,
 ```
 
 ```{r}
-graph_perf
 plot_best_numeric_hp_values.pdf <- ggpubr::ggarrange(plot_best_numeric_hp_values_bylr_sigma, plot_best_numeric_hp_values_bypmutcat)
 
 plot_perf_train_and_test <- ggdraw() +
@@ -542,6 +582,7 @@ df_lr <- df_all_hp |>
          .keep = "unused")
 
 df_all_lr <- df_all |> 
+  filter(iter == 1) |> 
   left_join(df_lr,
             by = c("trial", "hp_date")) |> 
   select(trial, hp_date, leaking_rate, outcomeDate, short_name_model, pmutQuant, pmutCat, lr_sigma, update, pred, outcome, hosp) |> 
