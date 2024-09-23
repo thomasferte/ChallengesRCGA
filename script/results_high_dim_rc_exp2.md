@@ -86,8 +86,52 @@ date.](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-6-1.png)
 ![Number of selected features among the best genetic
 individuals.](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-7-1.png)
 
+| model                   | 2021-03-01    | 2022-01-01    |
+|:------------------------|:--------------|:--------------|
+| Mutation adaptation     | 150.3(± 28.3) | 23.6(± 6.3)   |
+| Penalization = 0.001    | 204.8(± 10.2) | 208.3(± 10)   |
+| Penalization = 0.005    | 204.9(± 10.1) | 202.4(± 10.4) |
+| Penalization = 0.01     | 201.7(± 10)   | 199.9(± 10.4) |
+| Tournament penalization | 200.1(± 9.7)  | 196(± 9.1)    |
+
+Number of features selected at first and last month. Mean (sd)
+
 ![](results_high_dim_rc_exp2_files/figure-commonmark/freqselectionfeatures-1.png)
 
-![](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-8-1.png)
+<!-- ```{r fig.height=8} -->
+<!-- df_plot <- df_freq_selection |>  -->
+<!--   filter(model == "Epidemio") |>  -->
+<!--   group_by(name) |>  -->
+<!--   mutate(mean_prop = sum(value*(last_used_observation == "2022-01-01"))) |> -->
+<!--   ungroup() |>  -->
+<!--   mutate(name = FctCleanFeaturesName(name), -->
+<!--          name = as.factor(name), -->
+<!--          name = forcats::fct_reorder(name, -mean_prop), -->
+<!--          deriv = grepl(name, pattern = "(1st d)"), -->
+<!--          deriv = factor(deriv, -->
+<!--                         levels = c(F,T), -->
+<!--                         labels = c("Raw", "1st derivative"))) -->
+<!-- ggplot(data = df_plot, -->
+<!--        mapping = aes(y = value, -->
+<!--                      x = last_used_observation, -->
+<!--                      group = name, -->
+<!--                      label = name, -->
+<!--                      color = name)) + -->
+<!--   geom_line() + -->
+<!--   geom_text_repel(data = df_plot |>  -->
+<!--                     filter(last_used_observation == "2022-01-01"), -->
+<!--                   size = 3, -->
+<!--                   nudge_x = 6, -->
+<!--                   direction = "y", -->
+<!--                   force = 5, -->
+<!--                   arrow = arrow(length = unit(0.01, "npc"), type = "closed")) + -->
+<!--   scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1)) + -->
+<!--   scale_color_viridis_d(option = "B", end = 0.85) + -->
+<!--   theme_minimal() + -->
+<!--   theme(axis.text.x = element_text(angle = 90), -->
+<!--         legend.position = "none") + -->
+<!--   labs(y = "Frequency of feature selection", -->
+<!--        x = "Date update") -->
+<!-- ``` -->
 
 ![](results_high_dim_rc_exp2_files/figure-commonmark/unnamed-chunk-9-1.png)

@@ -171,6 +171,7 @@ graph_perf
 ```{r}
 path_hp <- here::here("results/experience_2/hyperparameters/")
 ls_files_full <- list.files(path_hp, full.names = TRUE, recursive = TRUE)
+ls_files_full <- grep(ls_files_full, pattern = "*_epidemio_*", invert = TRUE, value = "TRUE")
 numeric_hp <- c("ridge",
                 "spectral_radius",
                 "leaking_rate",
@@ -216,7 +217,7 @@ df_all_hp |>
   summarise(n = n(), .groups = "drop") |> 
   ggplot(mapping = aes(x = last_used_observation, y = n, fill = model)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = c("#001219", "#BB3E03", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
+  scale_fill_manual(values = c("#BB3E03", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
   labs(y = "nb of genetic individuals",
        x = "update date") +
   theme_minimal()
@@ -278,7 +279,7 @@ plot_nb_features <- temp |>
   geom_errorbar(width = 0, position = position_dodge(width=.5)) +
   geom_point(position = position_dodge(width=.5)) +
   geom_line(position = position_dodge(width=.5)) +
-  scale_color_manual(values = c("#001219", "#BB3E03", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
+  scale_color_manual(values = c("#BB3E03", "#005F73", "#0A9396", "#94D2BD", "#EE9B00")) +
   scale_y_continuous(breaks = seq(0,400, by =20)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90)) +
@@ -288,6 +289,26 @@ plot_nb_features <- temp |>
 
 plot_nb_features
 ```
+
+```{r}
+df_all_hp_best40_qual |>
+  filter(last_used_observation %in% as.Date(c("2021-03-01", "2022-01-01"))) |> 
+  tidyr::pivot_longer(cols = ends_with("_bin")) |> 
+  filter(!is.na(value)) |> 
+  group_by(genetic_id, model, last_used_observation) |> 
+  summarise(n_features = sum(value == "y"), .groups = "drop") |> 
+  mutate(last_used_observation = as.factor(last_used_observation)) |> 
+  group_by(model, last_used_observation) |> 
+  summarise(mean = round(mean(n_features), 1),
+            sd = round(sd(n_features), 1),
+            .groups = "drop") |> 
+  mutate(mean_sd = paste0(mean, "(\u00B1 ", sd, ")")) |> 
+  select(model, last_used_observation, mean_sd) |> 
+  tidyr::pivot_wider(names_from = last_used_observation, values_from = mean_sd) |> 
+  knitr::kable(caption = "Number of features selected at first and last month. Mean (sd)") |> 
+  kableExtra::kable_styling()
+```
+
 
 ```{r freqselectionfeatures, fig.height=4}
 df_freq_selection <- df_all_hp_best40_qual |>  
@@ -318,42 +339,42 @@ plot_distribution_feature_selection <- ggplot(df_freq_selection,
 plot_distribution_feature_selection
 ```
 
-```{r fig.height=8}
-df_plot <- df_freq_selection |> 
-  filter(model == "Epidemio") |> 
-  group_by(name) |> 
-  mutate(mean_prop = sum(value*(last_used_observation == "2022-01-01"))) |>
-  ungroup() |> 
-  mutate(name = FctCleanFeaturesName(name),
-         name = as.factor(name),
-         name = forcats::fct_reorder(name, -mean_prop),
-         deriv = grepl(name, pattern = "(1st d)"),
-         deriv = factor(deriv,
-                        levels = c(F,T),
-                        labels = c("Raw", "1st derivative")))
+<!-- ```{r fig.height=8} -->
+<!-- df_plot <- df_freq_selection |>  -->
+<!--   filter(model == "Epidemio") |>  -->
+<!--   group_by(name) |>  -->
+<!--   mutate(mean_prop = sum(value*(last_used_observation == "2022-01-01"))) |> -->
+<!--   ungroup() |>  -->
+<!--   mutate(name = FctCleanFeaturesName(name), -->
+<!--          name = as.factor(name), -->
+<!--          name = forcats::fct_reorder(name, -mean_prop), -->
+<!--          deriv = grepl(name, pattern = "(1st d)"), -->
+<!--          deriv = factor(deriv, -->
+<!--                         levels = c(F,T), -->
+<!--                         labels = c("Raw", "1st derivative"))) -->
 
-ggplot(data = df_plot,
-       mapping = aes(y = value,
-                     x = last_used_observation,
-                     group = name,
-                     label = name,
-                     color = name)) +
-  geom_line() +
-  geom_text_repel(data = df_plot |> 
-                    filter(last_used_observation == "2022-01-01"),
-                  size = 3,
-                  nudge_x = 6,
-                  direction = "y",
-                  force = 5,
-                  arrow = arrow(length = unit(0.01, "npc"), type = "closed")) +
-  scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1)) +
-  scale_color_viridis_d(option = "B", end = 0.85) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90),
-        legend.position = "none") +
-  labs(y = "Frequency of feature selection",
-       x = "Date update")
-```
+<!-- ggplot(data = df_plot, -->
+<!--        mapping = aes(y = value, -->
+<!--                      x = last_used_observation, -->
+<!--                      group = name, -->
+<!--                      label = name, -->
+<!--                      color = name)) + -->
+<!--   geom_line() + -->
+<!--   geom_text_repel(data = df_plot |>  -->
+<!--                     filter(last_used_observation == "2022-01-01"), -->
+<!--                   size = 3, -->
+<!--                   nudge_x = 6, -->
+<!--                   direction = "y", -->
+<!--                   force = 5, -->
+<!--                   arrow = arrow(length = unit(0.01, "npc"), type = "closed")) + -->
+<!--   scale_y_continuous(breaks = c(0,.5,1), limits = c(0,1)) + -->
+<!--   scale_color_viridis_d(option = "B", end = 0.85) + -->
+<!--   theme_minimal() + -->
+<!--   theme(axis.text.x = element_text(angle = 90), -->
+<!--         legend.position = "none") + -->
+<!--   labs(y = "Frequency of feature selection", -->
+<!--        x = "Date update") -->
+<!-- ``` -->
 
 ```{r fig.height=8}
 df_plot <- df_freq_selection |> 
