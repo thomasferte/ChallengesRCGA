@@ -817,7 +817,7 @@ plot_cat_features <- ggdraw() +
               theme(legend.position = "right"),
             x = 0, y = .45, width = 1, height = .55) +
   draw_plot(plot_nb_features + theme(legend.position = "bottom") +
-              guides(color = guide_legend(ncol = 1)),
+              guides(color = guide_legend(ncol = 2)),
             x = 0, y = 0, width = .4, height = .45) +
   draw_plot(plot_distribution_feature_selection +
               theme(legend.position = "bottom") +
